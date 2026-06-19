@@ -237,8 +237,30 @@ export const useWorkflowStore = create<WorkflowState>()(
       },
     }),
     {
-      name: 'action-workflow-v2', // v2 para invalidar caché vieja de localstorage y limpiar edgeIds malos
-      storage: createJSONStorage(() => localStorage),
+      name: 'action-workflow-v2',
+      storage: createJSONStorage(() => ({
+        getItem: (name) => {
+          try {
+            return localStorage.getItem(name);
+          } catch {
+            return null;
+          }
+        },
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, value);
+          } catch (e) {
+            console.warn('[WorkflowStore] No se pudo guardar en localStorage (cuota excedida). Los cambios solo persisten en memoria.');
+          }
+        },
+        removeItem: (name) => {
+          try {
+            localStorage.removeItem(name);
+          } catch {
+            // ignore
+          }
+        },
+      })),
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,
