@@ -263,6 +263,20 @@ export const useWorkflowStore = create<WorkflowState>()(
           }
         },
       })),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<WorkflowState>;
+        // Migrar edges que no tengan sourceHandle/targetHandle
+        if (persisted.edges) {
+          const needsMigration = persisted.edges.some(
+            (e) => !e.sourceHandle || !e.targetHandle
+          );
+          if (needsMigration) {
+            console.info('[WorkflowStore] Migrando edges sin handles, usando estado inicial.');
+            return currentState;
+          }
+        }
+        return { ...currentState, ...persisted };
+      },
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,
