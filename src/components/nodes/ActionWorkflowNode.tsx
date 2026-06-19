@@ -7,7 +7,7 @@
  *  - 36 handles perimetrales (cada 10°) para conectar desde cualquier punto de los arcos
  *  - Campo "código" (data.code) visible en la esquina superior izquierda del SVG
  */
-import { memo, useMemo, useState, useEffect } from "react";
+import { memo, useMemo, useEffect } from "react";
 import { Handle, Position, type NodeProps, useConnection, useNodeConnections, useUpdateNodeInternals } from "@xyflow/react";
 import type { WorkflowNode } from "../../types/workflow.types";
 import { PHASES } from "../../types/workflow.types";
@@ -127,10 +127,7 @@ function ActionWorkflowNodeInner({ id, data, selected }: NodeProps<WorkflowNode>
   const bwMode = useWorkflowStore((s) => s.bwMode);
   const connection = useConnection();
   const isConnecting = connection?.inProgress ?? false;
-  const activeNodeId = connection?.fromNode?.id ?? null;
-  const activeHandleId = connection?.fromHandle?.id ?? null;
   const connections = useNodeConnections({ id });
-  const [isHovered, setIsHovered] = useState(false);
   const updateNodeInternals = useUpdateNodeInternals();
 
   useEffect(() => {
@@ -176,8 +173,6 @@ function ActionWorkflowNodeInner({ id, data, selected }: NodeProps<WorkflowNode>
     <div
       className={`awn-container${selected ? " awn-selected" : ""}${isConnecting ? " awn-connecting" : ""}`}
       style={{ width: NODE_W, height: NODE_H, position: "relative" }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* ══ Actor: Cliente (izquierda) ══ */}
       <div
