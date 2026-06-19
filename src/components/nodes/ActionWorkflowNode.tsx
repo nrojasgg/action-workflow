@@ -212,6 +212,7 @@ function ActionWorkflowNodeInner({ id, data, selected }: NodeProps<WorkflowNode>
           viewBox={`0 0 ${SVG_W} ${SVG_H}`}
           aria-label={`Ciclo ${data.code}: ${data.label}`}
           overflow="visible"
+          style={{ pointerEvents: 'none' }}
         >
           {/* ── Fondo de la elipse (invisible para conservar el hitbox) ── */}
           <ellipse
