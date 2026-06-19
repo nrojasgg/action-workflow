@@ -392,11 +392,6 @@ function ActionWorkflowNodeInner({ id, data, selected }: NodeProps<WorkflowNode>
       {perimeterHandles.map(({ deg, nodeX, nodeY, rfPos }) => {
         const sourceId = `s-${deg}`;
         const targetId = `t-${deg}`;
-        const hasSource = connectedHandles.has(sourceId);
-        const hasTarget = connectedHandles.has(targetId);
-        const showAll = selected || isConnecting || isHovered;
-
-        if (!showAll && !hasSource && !hasTarget) return null;
 
         // Compensamos los transforms por defecto de React Flow para centrar los handles en (nodeX, nodeY)
         // sin romper la alineación de sus hitboxes internos con su representación visual.
@@ -405,24 +400,22 @@ function ActionWorkflowNodeInner({ id, data, selected }: NodeProps<WorkflowNode>
         const handleLeft = rfPos === Position.Right ? nodeX - 8 : nodeX;
         const handleTop = rfPos === Position.Bottom ? nodeY - 8 : nodeY;
 
-        const isCurrentActiveSource = isConnecting && activeNodeId === id && activeHandleId === sourceId;
-
-        return (
-          <span key={`h-${deg}`}>
-            <Handle
-              id={sourceId}
-              type="source"
-              position={rfPos}
-              style={{ left: handleLeft, top: handleTop, pointerEvents: isConnecting ? (isCurrentActiveSource ? "auto" : "none") : "auto" }}
-            />
-            <Handle
-              id={targetId}
-              type="target"
-              position={rfPos}
-              style={{ left: handleLeft, top: handleTop, pointerEvents: isConnecting ? "auto" : "none" }}
-            />
-          </span>
-        );
+        return [
+          <Handle
+            key={`s-${deg}`}
+            id={sourceId}
+            type="source"
+            position={rfPos}
+            style={{ left: handleLeft, top: handleTop }}
+          />,
+          <Handle
+            key={`t-${deg}`}
+            id={targetId}
+            type="target"
+            position={rfPos}
+            style={{ left: handleLeft, top: handleTop }}
+          />,
+        ];
       })}
     </div>
   );
