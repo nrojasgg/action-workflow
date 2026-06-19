@@ -50,6 +50,8 @@ const INITIAL_EDGES: WorkflowEdge[] = [
     id: 'edge-1-2',
     source: 'node-1',
     target: 'node-2',
+    sourceHandle: 's-0',
+    targetHandle: 't-180',
     type: 'workflow',
     animated: true,
     style: { stroke: '#6C8EBF', strokeWidth: 2 },
