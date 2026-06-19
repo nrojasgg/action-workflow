@@ -200,3 +200,73 @@
   color: rgba(255, 255, 255, 0.56);
   letter-spacing: 0.01em;
 }
+
+/* ── Responsive: tablets y móviles ──────────────────────────── */
+@media (max-width: 768px) {
+  .ctrl-panel {
+    width: 180px;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 4px;
+  }
+
+  .ctrl-header {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .ctrl-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .ctrl-logo svg {
+    width: 16px;
+    height: 12px;
+  }
+
+  .ctrl-title {
+    font-size: 11px;
+  }
+
+  .ctrl-subtitle {
+    font-size: 8px;
+  }
+
+  .ctrl-divider {
+    margin: 8px 0;
+  }
+
+  .ctrl-actions {
+    gap: 4px;
+  }
+
+  .ctrl-btn {
+    padding: 8px 10px;
+    font-size: 11px;
+    gap: 7px;
+  }
+
+  .ctrl-btn-icon {
+    font-size: 12px;
+  }
+
+  .ctrl-legend-title {
+    font-size: 8px;
+    margin-bottom: 6px;
+  }
+
+  .ctrl-legend-item {
+    margin-bottom: 4px;
+  }
+
+  .ctrl-legend-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .ctrl-legend-label {
+    font-size: 10px;
+  }
+}

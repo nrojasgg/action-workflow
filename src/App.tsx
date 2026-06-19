@@ -125,36 +125,64 @@ function WorkflowCanvas() {
         return;
       }
 
-      // Guardamos el viewport original
+      // Guardamos el viewport y dimensiones originales
       const originalViewport = getViewport();
+      const originalWidth = wrapper.style.width;
+      const originalHeight = wrapper.style.height;
+      const originalOverflow = wrapper.style.overflow;
 
-      // Ajustamos la vista para que encuadre perfectamente en la pantalla actual
-      await fitView({ padding: 0.15, duration: 0 });
+      // Calculamos el bounding box de todos los nodos
+      const padding = 80;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const node of allNodes) {
+        const w = (node.measured?.width ?? node.width ?? 220);
+        const h = (node.measured?.height ?? node.height ?? 160);
+        minX = Math.min(minX, node.position.x);
+        minY = Math.min(minY, node.position.y);
+        maxX = Math.max(maxX, node.position.x + w);
+        maxY = Math.max(maxY, node.position.y + h);
+      }
 
-      // Esperamos a que el DOM aplique los estilos (dos frames)
+      const contentW = maxX - minX + padding * 2;
+      const contentH = maxY - minY + padding * 2;
+
+      // Redimensionamos el canvas para que quepa todo el contenido
+      wrapper.style.width = `${contentW}px`;
+      wrapper.style.height = `${contentH}px`;
+      wrapper.style.overflow = 'visible';
+
+      // Esperamos un frame para que el layout se aplique
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+
+      // Ajustamos la vista para encuadrar todo
+      await fitView({ padding: 0.08, duration: 0 });
+
+      // Esperamos a que el DOM aplique los estilos
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
       // Agregamos la clase temporal para ocultar selecciones y handles
       wrapper.classList.add('is-exporting');
 
       const dataUrl = await toPng(wrapper, {
-        pixelRatio: 3, // Alta resolución (3x)
+        pixelRatio: 3,
         filter: (node: any) => {
           if (!node.classList) return true;
-          // Excluir elementos de UI flotantes o interactivos de React Flow
           const classesToExclude = [
             'react-flow__controls',
             'react-flow__minimap',
-            'react-flow__panel', // Incluye el ControlPanel superior
+            'react-flow__panel',
             'react-flow__attribution',
-            'props-panel' // Incluye el PropertiesPanel lateral
+            'props-panel'
           ];
           return !classesToExclude.some((cls) => node.classList.contains(cls));
         },
       });
 
-      // Restauramos el viewport y limpiamos la clase
+      // Restauramos todo
       wrapper.classList.remove('is-exporting');
+      wrapper.style.width = originalWidth;
+      wrapper.style.height = originalHeight;
+      wrapper.style.overflow = originalOverflow;
       setViewport(originalViewport);
 
       // Descargar
@@ -167,8 +195,10 @@ function WorkflowCanvas() {
       document.body.removeChild(a);
     } catch (err) {
       console.error('[ExportPNG]', err);
-      // Intentar limpiar la clase en caso de error
       wrapper.classList.remove('is-exporting');
+      wrapper.style.width = '';
+      wrapper.style.height = '';
+      wrapper.style.overflow = '';
       alert('Error al exportar la imagen. Por favor intenta de nuevo.');
     }
   }, [getNodes, fitView, getViewport, setViewport, bwMode]);
