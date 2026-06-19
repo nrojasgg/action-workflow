@@ -1,14 +1,11 @@
 /**
  * ControlPanel.tsx
  *
- * Panel flotante (glassmorphism) con las acciones principales del editor:
- *  - Agregar nuevo ciclo al centro del viewport
- *  - Exportar el grafo como JSON
- *  - Importar un JSON previamente exportado
- *  - Restablecer el lienzo al estado inicial
- *  - Leyenda de colores de las 4 fases
+ * Panel flotante (glassmorphism) con las acciones principales del editor.
+ * En escritorio: panel lateral fijo.
+ * En móvil/tablet: botón flotante que expande un menú overlay.
  */
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorkflowStore } from '../../store/workflowStore';
 import type { WorkflowExportSchema } from '../../types/workflow.types';
@@ -16,11 +13,8 @@ import { PHASES } from '../../types/workflow.types';
 import './ControlPanel.css';
 
 interface ControlPanelProps {
-  /** Callback para añadir un nodo en el centro del viewport actual */
   onAddNode: () => void;
-  /** Callback para añadir una nueva figura en el centro del viewport */
   onAddShape: () => void;
-  /** Callback para exportar el diagrama como PNG en blanco y negro */
   onExportPng: () => void;
 }
 
@@ -35,8 +29,22 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
     setBwMode: s.setBwMode,
   })));
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isOpen, setIsOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // ── Exportar ─────────────────────────────────────────────────
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // En móvil, cerrar el menú al inicio
+  useEffect(() => {
+    if (isMobile) setIsOpen(false);
+    else setIsOpen(true);
+  }, [isMobile]);
+
   const handleExport = () => {
     const schema = exportGraph();
     const json = JSON.stringify(schema, null, 2);
@@ -51,7 +59,6 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
     URL.revokeObjectURL(url);
   };
 
-  // ── Importar ─────────────────────────────────────────────────
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -60,7 +67,6 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
     reader.onload = (ev) => {
       try {
         const schema = JSON.parse(ev.target?.result as string) as WorkflowExportSchema;
-        // Validación mínima
         if (!Array.isArray(schema.nodes) || !Array.isArray(schema.edges)) {
           throw new Error('Estructura de JSON inválida');
         }
@@ -74,154 +80,131 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
       }
     };
     reader.readAsText(file);
-    // Resetear el input para permitir reimportar el mismo archivo
     e.target.value = '';
   };
 
-  // ── Restablecer ──────────────────────────────────────────────
   const handleReset = () => {
     if (window.confirm('¿Restablecer el lienzo al estado inicial?\nSe perderán todos los cambios no exportados.')) {
       resetGraph();
     }
   };
 
+  const handleCloseMobile = () => {
+    if (isMobile) setIsOpen(false);
+  };
+
   return (
-    <div className="ctrl-panel" role="navigation" aria-label="Panel de controles">
-      {/* ── Logo + Título ──────────────────────────────── */}
-      <header className="ctrl-header">
-        <div className="ctrl-logo" aria-hidden="true">
-          {/* Miniatura del ícono: elipse con 4 arcos de colores */}
-          <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
-            <ellipse cx="11" cy="8" rx="10" ry="7" fill="rgba(10,15,28,0.6)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
-            <path d="M 11 1 A 10 7 0 0 1 21 8" stroke="#6C8EBF" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-            <path d="M 21 8 A 10 7 0 0 1 11 15" stroke="#82B366"  strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-            <path d="M 11 15 A 10 7 0 0 1 1 8"  stroke="#D6B656"  strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-            <path d="M 1 8 A 10 7 0 0 1 11 1"   stroke="#AE4132"  strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-          </svg>
-        </div>
-        <div>
-          <h1 className="ctrl-title">Action Workflow</h1>
-          <p className="ctrl-subtitle">Editor de Flujos</p>
-        </div>
-      </header>
-
-      <div className="ctrl-divider" />
-
-      {/* ── Botones de acción ──────────────────────────── */}
-      <div className="ctrl-actions">
+    <>
+      {/* Botón toggle flotante (solo móvil) */}
+      {isMobile && (
         <button
-          id="btn-add-node"
-          className="ctrl-btn ctrl-btn--primary"
-          onClick={onAddNode}
-          title="Añadir nuevo ciclo al centro del lienzo"
+          className="ctrl-fab"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
         >
-          <span className="ctrl-btn-icon">＋</span>
-          Nuevo Ciclo
+          <span className="ctrl-fab-icon">{isOpen ? '✕' : '☰'}</span>
         </button>
+      )}
 
-        <button
-          id="btn-add-shape"
-          className="ctrl-btn ctrl-btn--primary"
-          onClick={onAddShape}
-          title="Añadir nueva figura geométrica (Círculo/Rombo) al centro del lienzo"
-          style={{ marginTop: '6px' }}
-        >
-          <span className="ctrl-btn-icon">○</span>
-          Nueva Figura
-        </button>
+      {/* Overlay de fondo (solo móvil abierto) */}
+      {isMobile && isOpen && (
+        <div className="ctrl-overlay" onClick={handleCloseMobile} />
+      )}
 
-        <button
-          id="btn-export"
-          className="ctrl-btn ctrl-btn--secondary"
-          onClick={handleExport}
-          title="Descargar el lienzo como archivo JSON"
-        >
-          <span className="ctrl-btn-icon">↓</span>
-          Exportar JSON
-        </button>
-
-        <button
-          id="btn-export-png"
-          className="ctrl-btn ctrl-btn--secondary"
-          onClick={onExportPng}
-          title="Descargar el diagrama completo como PNG"
-        >
-          <span className="ctrl-btn-icon">◻</span>
-          Exportar PNG
-        </button>
-
-        <button
-          id="btn-import"
-          className="ctrl-btn ctrl-btn--secondary"
-          onClick={() => fileInputRef.current?.click()}
-          title="Cargar un archivo JSON exportado previamente"
-        >
-          <span className="ctrl-btn-icon">↑</span>
-          Importar JSON
-        </button>
-
-        <button
-          id="btn-reset"
-          className="ctrl-btn ctrl-btn--danger"
-          onClick={handleReset}
-          title="Volver al estado inicial del lienzo"
-        >
-          <span className="ctrl-btn-icon">↺</span>
-          Restablecer
-        </button>
-      </div>
-
-      <div className="ctrl-divider" />
-
-      {/* ── Leyenda de fases ───────────────────────────── */}
-      <div className="ctrl-legend" aria-label="Leyenda de fases">
-        <p className="ctrl-legend-title">Fases del Ciclo</p>
-        {PHASES.map((phase) => (
-          <div key={phase.id} className="ctrl-legend-item">
-            <span
-              className="ctrl-legend-dot"
-              style={{ background: phase.color }}
-              aria-hidden="true"
-            />
-            <span className="ctrl-legend-label">{phase.label}</span>
+      <div className={`ctrl-panel${isOpen ? ' ctrl-panel--open' : ''}${isMobile ? ' ctrl-panel--mobile' : ''}`} role="navigation" aria-label="Panel de controles">
+        {/* Cabecera */}
+        <header className="ctrl-header">
+          <div className="ctrl-logo" aria-hidden="true">
+            <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+              <ellipse cx="11" cy="8" rx="10" ry="7" fill="rgba(10,15,28,0.6)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
+              <path d="M 11 1 A 10 7 0 0 1 21 8" stroke="#6C8EBF" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+              <path d="M 21 8 A 10 7 0 0 1 11 15" stroke="#82B366"  strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+              <path d="M 11 15 A 10 7 0 0 1 1 8"  stroke="#D6B656"  strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+              <path d="M 1 8 A 10 7 0 0 1 11 1"   stroke="#AE4132"  strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+            </svg>
           </div>
-        ))}
+          <div>
+            <h1 className="ctrl-title">Action Workflow</h1>
+            <p className="ctrl-subtitle">Editor de Flujos</p>
+          </div>
+        </header>
+
+        <div className="ctrl-divider" />
+
+        {/* Botones de acción */}
+        <div className="ctrl-actions">
+          <button className="ctrl-btn ctrl-btn--primary" onClick={() => { onAddNode(); handleCloseMobile(); }}>
+            <span className="ctrl-btn-icon">＋</span>
+            Nuevo Ciclo
+          </button>
+
+          <button className="ctrl-btn ctrl-btn--primary" onClick={() => { onAddShape(); handleCloseMobile(); }}>
+            <span className="ctrl-btn-icon">○</span>
+            Nueva Figura
+          </button>
+
+          <button className="ctrl-btn ctrl-btn--secondary" onClick={() => { handleExport(); handleCloseMobile(); }}>
+            <span className="ctrl-btn-icon">↓</span>
+            Exportar JSON
+          </button>
+
+          <button className="ctrl-btn ctrl-btn--secondary" onClick={() => { onExportPng(); handleCloseMobile(); }}>
+            <span className="ctrl-btn-icon">◻</span>
+            Exportar PNG
+          </button>
+
+          <button className="ctrl-btn ctrl-btn--secondary" onClick={() => { fileInputRef.current?.click(); handleCloseMobile(); }}>
+            <span className="ctrl-btn-icon">↑</span>
+            Importar JSON
+          </button>
+
+          <button className="ctrl-btn ctrl-btn--danger" onClick={() => { handleReset(); handleCloseMobile(); }}>
+            <span className="ctrl-btn-icon">↺</span>
+            Restablecer
+          </button>
+        </div>
+
+        <div className="ctrl-divider" />
+
+        {/* Leyenda de fases */}
+        <div className="ctrl-legend" aria-label="Leyenda de fases">
+          <p className="ctrl-legend-title">Fases del Ciclo</p>
+          {PHASES.map((phase) => (
+            <div key={phase.id} className="ctrl-legend-item">
+              <span className="ctrl-legend-dot" style={{ background: phase.color }} aria-hidden="true" />
+              <span className="ctrl-legend-label">{phase.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="ctrl-divider" />
+
+        {/* Configuración de vista */}
+        <div className="ctrl-settings">
+          <p className="ctrl-legend-title">Vista</p>
+
+          <label className="ctrl-checkbox-label">
+            <input type="checkbox" checked={showPhaseLabels} onChange={(e) => setShowPhaseLabels(e.target.checked)} />
+            Mostrar etiquetas de fase
+          </label>
+
+          <label className="ctrl-checkbox-label">
+            <input type="checkbox" checked={bwMode} onChange={(e) => setBwMode(e.target.checked)} />
+            Modo Blanco y Negro
+          </label>
+        </div>
+
+        {/* Input oculto para importar */}
+        <input
+          ref={fileInputRef}
+          id="file-import-input"
+          type="file"
+          accept=".json,application/json"
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+          aria-label="Seleccionar archivo JSON para importar"
+        />
       </div>
-
-      {/* ── Configuración de vista ──────────────────────── */}
-      <div className="ctrl-divider" />
-      <div className="ctrl-settings" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <p className="ctrl-legend-title">Vista</p>
-        
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={showPhaseLabels}
-            onChange={(e) => setShowPhaseLabels(e.target.checked)}
-          />
-          Mostrar etiquetas de fase
-        </label>
-
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.85)', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={bwMode}
-            onChange={(e) => setBwMode(e.target.checked)}
-          />
-          Modo Blanco y Negro
-        </label>
-      </div>
-
-      {/* Input oculto para importar */}
-      <input
-        ref={fileInputRef}
-        id="file-import-input"
-        type="file"
-        accept=".json,application/json"
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
-        aria-label="Seleccionar archivo JSON para importar"
-      />
-    </div>
+    </>
   );
 }
