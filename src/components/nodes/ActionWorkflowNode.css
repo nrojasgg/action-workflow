@@ -1,0 +1,154 @@
+/* ═══════════════════════════════════════════════════════
+   ActionWorkflowNode.css
+   Estilos del Custom Node para el diagrama Action Workflow
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Contenedor raíz ──────────────────────────────────── */
+.awn-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    position: relative;
+    border-radius: 12px;
+    transition: filter 0.25s ease;
+    /* Evitar que React Flow aplique bordes por defecto */
+    outline: none;
+}
+
+/* ── Estado seleccionado ──────────────────────────────── */
+.awn-container.awn-selected .awn-svg {
+    filter: drop-shadow(0 0 14px rgba(108, 142, 191, 0.75))
+        drop-shadow(0 0 28px rgba(108, 142, 191, 0.35));
+}
+
+.awn-container:not(.awn-selected) .awn-svg {
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.55));
+}
+
+.bw-mode .awn-container .awn-svg {
+    filter: none !important;
+}
+
+/* ── SVG de la elipse ─────────────────────────────────── */
+.awn-svg {
+    flex-shrink: 0;
+    overflow: visible;
+    transition: filter 0.25s ease;
+}
+
+/* ── Cajas de Actores ─────────────────────────────────── */
+.awn-actor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 10px;
+    min-height: 56px;
+    background: transparent;
+    border: none;
+}
+
+/* Lado izquierdo (Cliente) */
+.awn-actor--client {
+}
+
+/* Lado derecho (Realizador) */
+.awn-actor--performer {
+}
+
+/* ── Texto de los actores ─────────────────────────────── */
+.awn-actor-role {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.35);
+    line-height: 1;
+}
+
+.awn-actor-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+}
+/* ── Modo B/N ─────────────────────────────────────────── */
+.bw-mode .awn-actor {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.bw-mode .awn-actor-role {
+    color: #555555;
+}
+
+.bw-mode .awn-actor-name {
+    color: #000000;
+}
+
+.awn-actor-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.88);
+    line-height: 1.3;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Handles de React Flow (24 perimetrales, cada 15°) ─────── */
+
+/* Wrapper neutro para agrupar source+target por grado */
+.awn-container span {
+    display: contents;
+}
+
+.awn-container .react-flow__handle {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(108, 142, 191, 0);
+    border: 1.5px solid rgba(108, 142, 191, 0);
+    opacity: 0;
+    transition:
+        opacity 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease;
+    z-index: 10;
+}
+
+/* Aparecen al hacer hover, cuando está seleccionado o durante una conexión activa */
+.awn-container:hover .react-flow__handle,
+.awn-container.awn-selected .react-flow__handle,
+.awn-container.awn-connecting .react-flow__handle {
+    opacity: 1;
+    background: rgba(108, 142, 191, 0.22);
+    border-color: rgba(108, 142, 191, 0.65);
+}
+
+/* Realce al hacer hover individual sobre el handle */
+.awn-container .react-flow__handle:hover {
+    opacity: 1 !important;
+    background: rgba(108, 142, 191, 0.92) !important;
+    border-color: rgba(255, 255, 255, 0.9) !important;
+    transform: translate(-50%, -50%) scale(1.55) !important;
+}
+
+.awn-container .react-flow__handle-right:hover {
+    transform: translate(50%, -50%) scale(1.55) !important;
+}
+
+.awn-container .react-flow__handle-bottom:hover {
+    transform: translate(-50%, 50%) scale(1.55) !important;
+}
+
+/* Handle válido como destino durante conexión */
+.awn-container .react-flow__handle.react-flow__handle-connecting {
+    opacity: 1 !important;
+    background: rgba(130, 179, 102, 0.9) !important;
+    border-color: white !important;
+}

@@ -1,0 +1,213 @@
+/* ═══════════════════════════════════════════════════════════════
+   App.css — Layout del lienzo y overrides de React Flow
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Contenedor raíz del canvas ─────────────────────────────── */
+.canvas-wrapper {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(108,142,191,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 70%, rgba(130,179,102,0.04) 0%, transparent 55%),
+    linear-gradient(160deg, #09101f 0%, #070b18 50%, #0a0d1c 100%);
+}
+
+/* ── Eliminar estilos de nodo por defecto de React Flow ─────── */
+.react-flow__node {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Nodo de tipo actionWorkflow */
+.react-flow__node-actionWorkflow {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ── Borde de selección estándar de React Flow (ocultarlo) ─── */
+.react-flow__node.selected > * {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Línea de conexión en progreso ──────────────────────────── */
+.react-flow__connection-line {
+  stroke: var(--color-prep);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  opacity: 0.75;
+}
+
+/* ── Aristas (edges) ────────────────────────────────────────── */
+.react-flow__edge-path {
+  stroke: var(--color-prep);
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Panel de React Flow (reset de z-index) ─────────────────── */
+.react-flow__panel {
+  z-index: 10;
+}
+
+/* ── Controles de zoom/pan ──────────────────────────────────── */
+.react-flow__controls {
+  background: rgba(7, 10, 20, 0.90) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  transition: background 0.15s !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+/* ── MiniMap ────────────────────────────────────────────────── */
+.react-flow__minimap {
+  background: rgba(7, 10, 20, 0.90) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden;
+}
+
+.react-flow__minimap-svg {
+  border-radius: 10px;
+}
+
+/* ── Handle de conexión hover ───────────────────────────────── */
+.react-flow__handle {
+  transition: opacity 0.2s, transform 0.2s !important;
+}
+
+/* ── Toast / Notificación de importación exitosa ─────────────  */
+.import-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: rgba(130, 179, 102, 0.15);
+  border: 1px solid rgba(130, 179, 102, 0.40);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  color: rgba(200, 255, 180, 0.90);
+  backdrop-filter: blur(16px);
+  transition: transform 0.35s var(--ease-out), opacity 0.35s;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.import-toast.import-toast--visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ── Modo Blanco y Negro ───────────────────────────────────── */
+.canvas-wrapper.bw-mode {
+  background: #ffffff !important;
+}
+
+.canvas-wrapper.bw-mode .react-flow__background {
+  opacity: 0 !important;
+}
+
+.canvas-wrapper.bw-mode .react-flow__controls,
+.canvas-wrapper.bw-mode .react-flow__minimap {
+  background: #f0f0f0 !important;
+  border-color: #ddd !important;
+}
+
+.canvas-wrapper.bw-mode .react-flow__controls-button {
+  color: #333 !important;
+  border-bottom-color: #ddd !important;
+}
+
+.canvas-wrapper.bw-mode .react-flow__minimap-mask {
+  fill: rgba(255, 255, 255, 0.7);
+}
+
+.canvas-wrapper.bw-mode .react-flow__minimap-node {
+  fill: #999;
+  stroke: #333;
+}
+
+/* ── Reglas de ocultación y limpieza para exportación PNG ── */
+.canvas-wrapper.is-exporting .react-flow__handle {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.canvas-wrapper.is-exporting .edge-control-point {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.canvas-wrapper.is-exporting .react-flow__edge-interaction {
+  display: none !important;
+}
+
+/* Quitar efectos de selección de los ciclos (nodos) */
+.canvas-wrapper.is-exporting .awn-container.awn-selected .awn-svg {
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.55)) !important;
+}
+
+/* Quitar efectos de selección de ShapeNode */
+.canvas-wrapper.is-exporting .shape-node-container svg circle,
+.canvas-wrapper.is-exporting .shape-node-container svg path,
+.canvas-wrapper.is-exporting .shape-node-container svg polygon {
+  stroke-width: 2px !important;
+}
+.canvas-wrapper.is-exporting:not(.bw-mode) .shape-node-container svg circle,
+.canvas-wrapper.is-exporting:not(.bw-mode) .shape-node-container svg path,
+.canvas-wrapper.is-exporting:not(.bw-mode) .shape-node-container svg polygon {
+  stroke: rgba(255, 255, 255, 0.9) !important;
+}
+.canvas-wrapper.is-exporting.bw-mode .shape-node-container svg circle,
+.canvas-wrapper.is-exporting.bw-mode .shape-node-container svg path,
+.canvas-wrapper.is-exporting.bw-mode .shape-node-container svg polygon {
+  stroke: #000000 !important;
+}
+
+/* Quitar efectos de selección de las flechas (edges) */
+.canvas-wrapper.is-exporting .react-flow__edge-path {
+  stroke-width: 2px !important;
+}
+.canvas-wrapper.is-exporting .react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--color-prep) !important;
+}
+.canvas-wrapper.is-exporting.bw-mode .react-flow__edge.selected .react-flow__edge-path {
+  stroke: #000000 !important;
+}

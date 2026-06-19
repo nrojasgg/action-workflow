@@ -1,0 +1,40 @@
+.edge-control-point {
+  width: 16px;
+  height: 16px;
+  cursor: grab;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edge-control-point.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.edge-control-point.dragging {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.2) !important;
+}
+
+.control-point-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #6C8EBF;
+  background-color: #0A0F1C;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.edge-control-point:hover .control-point-inner {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* El path invisible para facilitar el click */
+.react-flow__edge-interaction {
+  cursor: pointer;
+}
