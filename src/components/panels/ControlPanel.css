@@ -158,11 +158,39 @@
   color: rgba(255, 175, 165, 0.82);
 }
 
-.ctrl-btn--danger:hover {
-  background: rgba(174, 65, 50, 0.20);
-  border-color: rgba(174, 65, 50, 0.48);
-  box-shadow: 0 0 14px rgba(174, 65, 50, 0.22);
+.ctrl-btn--danger:active {
+  transform: translateY(0);
+}
+
+/* Variante Drive */
+.ctrl-btn--drive {
+  background: rgba(66, 133, 244, 0.10);
+  border-color: rgba(66, 133, 244, 0.25);
+  color: rgba(160, 195, 255, 0.90);
+}
+
+.ctrl-btn--drive:hover {
+  background: rgba(66, 133, 244, 0.20);
+  border-color: rgba(66, 133, 244, 0.50);
+  box-shadow: 0 0 14px rgba(66, 133, 244, 0.20);
   transform: translateY(-1px);
+}
+
+.ctrl-btn--drive:active {
+  transform: translateY(0);
+}
+
+.ctrl-btn--drive:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Botón pequeño */
+.ctrl-btn--small {
+  padding: 6px 10px;
+  font-size: 10px;
+  min-height: auto;
 }
 
 /* ── Leyenda de fases ───────────────────────────────────── */
@@ -434,4 +462,71 @@
     font-size: 20px;
     z-index: 1001;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST DE DRIVE
+   ═══════════════════════════════════════════════════════════ */
+.drive-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 2000;
+  animation: driveToastIn 0.3s var(--ease-out) both;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes driveToastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.drive-toast--loading {
+  background: rgba(66, 133, 244, 0.15);
+  border: 1px solid rgba(66, 133, 244, 0.35);
+  color: rgba(160, 200, 255, 0.95);
+}
+
+.drive-toast--success {
+  background: rgba(130, 179, 102, 0.15);
+  border: 1px solid rgba(130, 179, 102, 0.40);
+  color: rgba(200, 255, 180, 0.95);
+}
+
+.drive-toast--error {
+  background: rgba(174, 65, 50, 0.15);
+  border: 1px solid rgba(174, 65, 50, 0.40);
+  color: rgba(255, 180, 170, 0.95);
+}
+
+.drive-toast-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(66, 133, 244, 0.3);
+  border-top-color: rgba(160, 200, 255, 0.9);
+  border-radius: 50%;
+  animation: driveSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes driveSpin {
+  to { transform: rotate(360deg); }
+}
+
+.drive-toast-icon {
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
 }

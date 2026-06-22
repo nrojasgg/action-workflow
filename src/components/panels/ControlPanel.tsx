@@ -5,11 +5,12 @@
  * En escritorio: panel lateral fijo.
  * En móvil/tablet: botón flotante que expande un menú overlay.
  */
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorkflowStore } from '../../store/workflowStore';
 import type { WorkflowExportSchema } from '../../types/workflow.types';
 import { PHASES } from '../../types/workflow.types';
+import { importFromDrive, exportToDrive, disconnectDrive, isConnected } from '../../services/googleDrive';
 import './ControlPanel.css';
 
 interface ControlPanelProps {
@@ -17,6 +18,8 @@ interface ControlPanelProps {
   onAddShape: () => void;
   onExportPng: () => void;
 }
+
+type DriveStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPanelProps) {
   const { exportGraph, importGraph, resetGraph, showPhaseLabels, setShowPhaseLabels, bwMode, setBwMode } = useWorkflowStore(useShallow((s) => ({
@@ -31,6 +34,9 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(() => window.innerWidth >= 768);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const [driveStatus, setDriveStatus] = useState<DriveStatus>('idle');
+  const [driveMessage, setDriveMessage] = useState('');
+  const [driveConnected, setDriveConnected] = useState(() => isConnected());
 
   useEffect(() => {
     const check = () => {
@@ -41,6 +47,59 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  const handleCloseMobile = useCallback(() => {
+    if (isMobile) setIsOpen(false);
+  }, [isMobile]);
+
+  const showDriveToast = useCallback((msg: string, status: DriveStatus) => {
+    setDriveMessage(msg);
+    setDriveStatus(status);
+    if (status !== 'loading') {
+      setTimeout(() => setDriveStatus('idle'), 4000);
+    }
+  }, []);
+
+  const handleDriveImport = useCallback(async () => {
+    try {
+      setDriveStatus('loading');
+      setDriveMessage('Conectando con Google Drive...');
+      handleCloseMobile();
+
+      const schema: WorkflowExportSchema | null = await importFromDrive();
+      if (!schema) {
+        setDriveStatus('idle');
+        return;
+      }
+
+      importGraph(schema);
+      setDriveConnected(true);
+      showDriveToast('Archivo importado desde Drive correctamente', 'success');
+    } catch (err) {
+      showDriveToast(`Error: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    }
+  }, [importGraph, showDriveToast, handleCloseMobile]);
+
+  const handleDriveExport = useCallback(async () => {
+    try {
+      setDriveStatus('loading');
+      setDriveMessage('Subiendo a Google Drive...');
+      handleCloseMobile();
+
+      const schema = exportGraph();
+      await exportToDrive(schema);
+      setDriveConnected(true);
+      showDriveToast(`Archivo guardado en Drive`, 'success');
+    } catch (err) {
+      showDriveToast(`Error: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    }
+  }, [exportGraph, showDriveToast, handleCloseMobile]);
+
+  const handleDriveDisconnect = useCallback(() => {
+    disconnectDrive();
+    setDriveConnected(false);
+    showDriveToast('Desconectado de Google Drive', 'success');
+  }, [showDriveToast]);
 
   const handleExport = () => {
     const schema = exportGraph();
@@ -84,10 +143,6 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
     if (window.confirm('¿Restablecer el lienzo al estado inicial?\nSe perderán todos los cambios no exportados.')) {
       resetGraph();
     }
-  };
-
-  const handleCloseMobile = () => {
-    if (isMobile) setIsOpen(false);
   };
 
   return (
@@ -156,7 +211,55 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
             <span className="ctrl-btn-icon">↑</span>
             Importar JSON
           </button>
+        </div>
 
+        <div className="ctrl-divider" />
+
+        {/* Google Drive */}
+        <div className="ctrl-actions">
+          <p className="ctrl-legend-title">Google Drive</p>
+
+          <button
+            className="ctrl-btn ctrl-btn--drive"
+            onClick={handleDriveImport}
+            disabled={driveStatus === 'loading'}
+          >
+            <span className="ctrl-btn-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </span>
+            Importar desde Drive
+          </button>
+
+          <button
+            className="ctrl-btn ctrl-btn--drive"
+            onClick={handleDriveExport}
+            disabled={driveStatus === 'loading'}
+          >
+            <span className="ctrl-btn-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </span>
+            Exportar a Drive
+          </button>
+
+          {driveConnected && (
+            <button className="ctrl-btn ctrl-btn--secondary ctrl-btn--small" onClick={handleDriveDisconnect}>
+              Desconectar Drive
+            </button>
+          )}
+        </div>
+
+        <div className="ctrl-divider" />
+
+        {/* Restablecer */}
+        <div className="ctrl-actions">
           <button className="ctrl-btn ctrl-btn--danger" onClick={() => { handleReset(); handleCloseMobile(); }}>
             <span className="ctrl-btn-icon">↺</span>
             Restablecer
@@ -204,6 +307,16 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
           aria-label="Seleccionar archivo JSON para importar"
         />
       </div>
+      )}
+
+      {/* Toast de Drive */}
+      {driveStatus !== 'idle' && (
+        <div className={`drive-toast drive-toast--${driveStatus}`}>
+          {driveStatus === 'loading' && <span className="drive-toast-spinner" />}
+          {driveStatus === 'success' && <span className="drive-toast-icon">✓</span>}
+          {driveStatus === 'error' && <span className="drive-toast-icon">✕</span>}
+          <span>{driveMessage}</span>
+        </div>
       )}
     </>
   );
