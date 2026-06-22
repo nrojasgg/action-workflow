@@ -29,21 +29,18 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
     setBwMode: s.setBwMode,
   })));
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isOpen, setIsOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => window.innerWidth >= 768);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+    };
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-
-  // En móvil, cerrar el menú al inicio
-  useEffect(() => {
-    if (isMobile) setIsOpen(false);
-    else setIsOpen(true);
-  }, [isMobile]);
 
   const handleExport = () => {
     const schema = exportGraph();
@@ -111,7 +108,9 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
         <div className="ctrl-overlay" onClick={handleCloseMobile} />
       )}
 
-      <div className={`ctrl-panel${isOpen ? ' ctrl-panel--open' : ''}${isMobile ? ' ctrl-panel--mobile' : ''}`} role="navigation" aria-label="Panel de controles">
+      {/* En móvil: solo renderizar el panel cuando está abierto */}
+      {(!isMobile || isOpen) && (
+        <div className={`ctrl-panel${isOpen ? ' ctrl-panel--open' : ''}${isMobile ? ' ctrl-panel--mobile' : ''}`} role="navigation" aria-label="Panel de controles">
         {/* Cabecera */}
         <header className="ctrl-header">
           <div className="ctrl-logo" aria-hidden="true">
@@ -205,6 +204,7 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
           aria-label="Seleccionar archivo JSON para importar"
         />
       </div>
+      )}
     </>
   );
 }

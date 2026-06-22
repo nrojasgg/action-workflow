@@ -283,15 +283,21 @@
   border-left: none;
   border-top: none;
   border-bottom: none;
-  transform: translateX(-100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-bottom: max(18px, env(safe-area-inset-bottom));
+  animation: slideInLeft 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-.ctrl-panel--mobile.ctrl-panel--open {
-  transform: translateX(0);
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* En móvil, los botones son más grandes para touch */
