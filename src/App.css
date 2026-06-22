@@ -211,3 +211,70 @@
 .canvas-wrapper.is-exporting.bw-mode .react-flow__edge.selected .react-flow__edge-path {
   stroke: #000000 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — MÓVIL (max-width: 767px)
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* MiniMap: más pequeño, esquina inferior derecha */
+  .react-flow__minimap {
+    width: 90px !important;
+    height: 65px !important;
+    border-radius: 10px !important;
+    bottom: 8px !important;
+    right: 8px !important;
+  }
+
+  /* Controles de zoom: compactos */
+  .react-flow__controls {
+    border-radius: 10px !important;
+    bottom: 8px !important;
+    left: 8px !important;
+  }
+
+  .react-flow__controls-button {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .react-flow__controls-button svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Toast de importación */
+  .import-toast {
+    bottom: 12px;
+    left: 50%;
+    width: calc(100vw - 32px);
+    max-width: 340px;
+    text-align: center;
+    font-size: 12px;
+    padding: 10px 16px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — TABLET (768px – 1023px)
+   ═══════════════════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .react-flow__minimap {
+    width: 130px !important;
+    height: 95px !important;
+  }
+
+  .react-flow__controls-button {
+    width: 30px !important;
+    height: 30px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BW MODE — Controles y MiniMap responsive
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .canvas-wrapper.bw-mode .react-flow__controls,
+  .canvas-wrapper.bw-mode .react-flow__minimap {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+}

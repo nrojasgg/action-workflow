@@ -10,7 +10,7 @@
  * También muestra el ID del nodo y la descripción de las 4 fases.
  * Incluye botón para eliminar el nodo seleccionado.
  */
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useWorkflowStore } from '../../store/workflowStore';
 import type { AppNode, WorkflowEdge, ActionWorkflowNodeData, WorkflowEdgeData } from '../../types/workflow.types';
@@ -33,6 +33,15 @@ export function PropertiesPanel({ node, edge }: PropertiesPanelProps) {
     deleteEdge: s.deleteEdge,
     setSelectedEdgeId: s.setSelectedEdgeId,
   })));
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   // Actualización en tiempo real de un campo del nodo
   const handleChange = useCallback(
@@ -66,11 +75,23 @@ export function PropertiesPanel({ node, edge }: PropertiesPanelProps) {
   const isOpen = node !== null || (edge !== undefined && edge !== null);
 
   return (
-    <aside
-      className={`props-panel${isOpen ? ' props-panel--open' : ''}`}
-      aria-label="Panel de propiedades del ciclo"
-      aria-hidden={!isOpen}
-    >
+    <>
+      {/* Overlay de fondo en móvil */}
+      {isMobile && isOpen && (
+        <div className="props-overlay" onClick={handleClose} />
+      )}
+
+      <aside
+        className={`props-panel${isOpen ? ' props-panel--open' : ''}${isMobile ? ' props-panel--mobile' : ''}`}
+        aria-label="Panel de propiedades del ciclo"
+        aria-hidden={!isOpen}
+      >
+        {/* Drag handle visual (solo móvil) */}
+        {isMobile && (
+          <div className="props-drag-handle" aria-hidden="true">
+            <div className="props-drag-bar" />
+          </div>
+        )}
       {/* ── Cabecera ─────────────────────────────────────── */}
       <div className="props-header">
         <div>
@@ -351,6 +372,7 @@ export function PropertiesPanel({ node, edge }: PropertiesPanelProps) {
           </button>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

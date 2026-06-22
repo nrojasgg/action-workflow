@@ -363,3 +363,69 @@
   background: rgba(255, 255, 255, 0.15);
   border-radius: 2px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MÓVIL PEQUEÑO (max-width: 400px)
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 400px) {
+  .ctrl-panel--mobile {
+    width: 260px;
+  }
+
+  .ctrl-panel--mobile .ctrl-btn {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .ctrl-panel--mobile .ctrl-title {
+    font-size: 14px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABLET (768px – 1023px)
+   En tablet el panel se muestra como sidebar compacto
+   ═══════════════════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .ctrl-panel {
+    width: 200px;
+    padding: 14px;
+    margin: 4px;
+  }
+
+  .ctrl-btn {
+    padding: 8px 11px;
+    font-size: 11.5px;
+  }
+
+  .ctrl-title {
+    font-size: 12px;
+  }
+
+  .ctrl-subtitle {
+    font-size: 9px;
+  }
+
+  .ctrl-legend-label {
+    font-size: 11px;
+  }
+
+  .ctrl-checkbox-label {
+    font-size: 12px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FAB — Evitar overlap con controles de React Flow
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .ctrl-fab {
+    top: 8px;
+    left: 8px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 20px;
+    z-index: 1001;
+  }
+}
