@@ -1,8 +1,6 @@
 import type { WorkflowExportSchema } from '../types/workflow.types';
 
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
-const FULL_SCOPE = `${DRIVE_SCOPE} ${DRIVE_FILE_SCOPE}`;
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
 const JSON_MIME = 'application/json';
 
 function formatError(err: unknown): string {
@@ -75,7 +73,7 @@ async function authenticate(): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: getClientId(),
-      scope: FULL_SCOPE,
+      scope: DRIVE_SCOPE,
       callback: (resp) => {
         if (resp.error) {
           reject(new Error(`Error de autenticación: ${resp.error}`));
@@ -168,14 +166,21 @@ export async function importFromDrive(): Promise<WorkflowExportSchema | null> {
   );
 
   if (!resp.ok) {
-    throw new Error(`Error al leer archivo: ${resp.status} ${resp.statusText}`);
+    const errText = await resp.text();
+    throw new Error(`Error al leer archivo (${resp.status}): ${errText}`);
   }
 
   const text = await resp.text();
-  const schema = JSON.parse(text) as WorkflowExportSchema;
+
+  let schema: WorkflowExportSchema;
+  try {
+    schema = JSON.parse(text) as WorkflowExportSchema;
+  } catch {
+    throw new Error('El archivo no es un JSON válido.');
+  }
 
   if (!Array.isArray(schema.nodes) || !Array.isArray(schema.edges)) {
-    throw new Error('El archivo seleccionado no tiene la estructura válida de Action Workflow.');
+    throw new Error('El archivo no tiene la estructura de Action Workflow (faltan nodos o aristas).');
   }
 
   return schema;
