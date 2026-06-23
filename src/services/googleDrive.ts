@@ -1,20 +1,9 @@
 import type { WorkflowExportSchema } from '../types/workflow.types';
 
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+const FULL_SCOPE = `${DRIVE_SCOPE} ${DRIVE_FILE_SCOPE}`;
 const JSON_MIME = 'application/json';
-
-declare const gapi: {
-  load: (api: string, callback: () => void) => void;
-  client: {
-    init: (config: { apiKey: string; discoveryDocs: string[] }) => Promise<void>;
-    drive: {
-      files: {
-        get: (params: { fileId: string; alt: string }) => Promise<{ body: string; result?: unknown }>;
-      };
-    };
-  };
-};
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -34,19 +23,13 @@ function formatError(err: unknown): string {
 
 let tokenClient: google.accounts.oauth2.TokenClient | null = null;
 let accessToken: string | null = null;
-let gapiLoaded = false;
+let pickerLoaded = false;
 let gisLoaded = false;
 
 function getClientId(): string {
   const id = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   if (!id) throw new Error('Falta VITE_GOOGLE_CLIENT_ID en las variables de entorno.');
   return id;
-}
-
-function getApiKey(): string {
-  const key = import.meta.env.VITE_GOOGLE_API_KEY;
-  if (!key) throw new Error('Falta VITE_GOOGLE_API_KEY en las variables de entorno.');
-  return key;
 }
 
 // ─── Carga dinámica de scripts ────────────────────────────────────────────
@@ -66,15 +49,14 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
-async function ensureGapi(): Promise<void> {
-  if (gapiLoaded) return;
+async function ensurePicker(): Promise<void> {
+  if (pickerLoaded) return;
   await loadScript('https://apis.google.com/js/api.js');
-  await new Promise<void>((resolve) => gapi.load('client:picker', resolve));
-  await gapi.client.init({
-    apiKey: getApiKey(),
-    discoveryDocs: [DISCOVERY_DOC],
+  await new Promise<void>((resolve) => {
+    (window as unknown as { gapi: { load: (api: string, cb: () => void) => void } })
+      .gapi.load('picker', resolve);
   });
-  gapiLoaded = true;
+  pickerLoaded = true;
 }
 
 async function ensureGis(): Promise<void> {
@@ -93,7 +75,7 @@ async function authenticate(): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: getClientId(),
-      scope: DRIVE_SCOPE,
+      scope: FULL_SCOPE,
       callback: (resp) => {
         if (resp.error) {
           reject(new Error(`Error de autenticación: ${resp.error}`));
@@ -121,22 +103,47 @@ export function isConnected(): boolean {
   return accessToken !== null;
 }
 
-// ─── Picker para seleccionar archivo JSON ─────────────────────────────────
+// ─── Picker para seleccionar archivo ──────────────────────────────────────
 
 async function openFilePicker(token: string): Promise<{ id: string; name: string } | null> {
-  await ensureGapi();
+  await ensurePicker();
 
   return new Promise((resolve) => {
     const view = new google.picker.View(google.picker.ViewId.DOCS);
-    view.setMimeTypes(`${JSON_MIME},text/plain`);
+    view.setMimeTypes(`${JSON_MIME},text/plain,application/octet-stream`);
 
     const picker = new google.picker.PickerBuilder()
       .addView(view)
       .setOAuthToken(token)
-      .setDeveloperKey(getApiKey())
       .setCallback((data: GooglePickerResponse) => {
         if (data.action === google.picker.Action.PICKED && data.docs?.length) {
           resolve({ id: data.docs[0].id, name: data.docs[0].name });
+        } else {
+          resolve(null);
+        }
+      })
+      .build();
+
+    picker.setVisible(true);
+  });
+}
+
+// ─── Picker para seleccionar carpeta de destino ───────────────────────────
+
+async function openFolderPicker(token: string): Promise<string | null> {
+  await ensurePicker();
+
+  return new Promise((resolve) => {
+    const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS);
+    view.setSelectFolderEnabled(true);
+    view.setMimeTypes('application/vnd.google-apps.folder');
+
+    const picker = new google.picker.PickerBuilder()
+      .addView(view)
+      .setOAuthToken(token)
+      .setCallback((data: GooglePickerResponse) => {
+        if (data.action === google.picker.Action.PICKED && data.docs?.length) {
+          resolve(data.docs[0].id);
         } else {
           resolve(null);
         }
@@ -151,17 +158,20 @@ async function openFilePicker(token: string): Promise<{ id: string; name: string
 
 export async function importFromDrive(): Promise<WorkflowExportSchema | null> {
   const token = await authenticate();
-  await ensureGapi();
 
   const file = await openFilePicker(token);
   if (!file) return null;
 
-  const resp = await gapi.client.drive.files.get({
-    fileId: file.id,
-    alt: 'media',
-  });
+  const resp = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
 
-  const text = typeof resp.body === 'string' ? resp.body : JSON.stringify(resp.result ?? resp.body);
+  if (!resp.ok) {
+    throw new Error(`Error al leer archivo: ${resp.status} ${resp.statusText}`);
+  }
+
+  const text = await resp.text();
   const schema = JSON.parse(text) as WorkflowExportSchema;
 
   if (!Array.isArray(schema.nodes) || !Array.isArray(schema.edges)) {
@@ -175,7 +185,9 @@ export async function importFromDrive(): Promise<WorkflowExportSchema | null> {
 
 export async function exportToDrive(schema: WorkflowExportSchema): Promise<string> {
   const token = await authenticate();
-  await ensureGapi();
+
+  const folderId = await openFolderPicker(token);
+  if (!folderId) throw new Error('No se seleccionó carpeta de destino.');
 
   const json = JSON.stringify(schema, null, 2);
   const blob = new Blob([json], { type: JSON_MIME });
@@ -184,6 +196,7 @@ export async function exportToDrive(schema: WorkflowExportSchema): Promise<strin
   const metadata = {
     name: fileName,
     mimeType: JSON_MIME,
+    parents: [folderId],
   };
 
   const form = new FormData();

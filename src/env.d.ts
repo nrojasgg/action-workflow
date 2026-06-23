@@ -61,15 +61,19 @@ interface GooglePickerResponse {
 
 declare namespace google.picker {
   const Action: { PICKED: string; CANCEL: string };
-  const ViewId: { DOCS: string };
+  const ViewId: { DOCS: string; FOLDERS: string };
   class View {
     constructor(viewId: string);
     setMimeTypes(mimeTypes: string): View;
   }
+  class DocsView {
+    constructor(viewId: string);
+    setSelectFolderEnabled(enabled: boolean): DocsView;
+    setMimeTypes(mimeTypes: string): DocsView;
+  }
   class PickerBuilder {
-    addView(view: View): PickerBuilder;
+    addView(view: View | DocsView): PickerBuilder;
     setOAuthToken(token: string): PickerBuilder;
-    setDeveloperKey(key: string): PickerBuilder;
     setCallback(callback: (data: GooglePickerResponse) => void): PickerBuilder;
     build(): GooglePicker;
   }

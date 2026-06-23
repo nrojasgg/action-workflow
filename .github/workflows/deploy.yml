@@ -27,19 +27,9 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - name: Debug env vars
-        run: |
-          echo "CLIENT_ID length: ${#VITE_GOOGLE_CLIENT_ID}"
-          echo "API_KEY length: ${#VITE_GOOGLE_API_KEY}"
-          echo "CLIENT_ID prefix: ${VITE_GOOGLE_CLIENT_ID:0:10}"
-          echo "API_KEY prefix: ${VITE_GOOGLE_API_KEY:0:6}"
-        env:
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
-          VITE_GOOGLE_API_KEY: ${{ vars.VITE_GOOGLE_API_KEY }}
       - run: npm run build
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
-          VITE_GOOGLE_API_KEY: ${{ vars.VITE_GOOGLE_API_KEY }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
