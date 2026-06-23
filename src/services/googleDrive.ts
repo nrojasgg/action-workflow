@@ -16,6 +16,22 @@ declare const gapi: {
   };
 };
 
+function formatError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  if (typeof err === 'object' && err !== null) {
+    const obj = err as Record<string, unknown>;
+    if (typeof obj.message === 'string') return obj.message;
+    if (typeof obj.error === 'string') return obj.error;
+    if (typeof obj.error === 'object' && obj.error !== null) {
+      const inner = obj.error as Record<string, unknown>;
+      if (typeof inner.message === 'string') return inner.message;
+    }
+    try { return JSON.stringify(err); } catch { return 'Error desconocido'; }
+  }
+  return String(err);
+}
+
 let tokenClient: google.accounts.oauth2.TokenClient | null = null;
 let accessToken: string | null = null;
 let gapiLoaded = false;
@@ -87,7 +103,7 @@ async function authenticate(): Promise<string> {
         resolve(resp.access_token);
       },
       error_callback: (err) => {
-        reject(new Error(`Error de autenticación: ${String(err)}`));
+        reject(new Error(`Error de autenticación: ${formatError(err)}`));
       },
     });
     tokenClient.requestAccessToken();
