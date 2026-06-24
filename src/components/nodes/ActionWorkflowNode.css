@@ -49,14 +49,6 @@
     border: none;
 }
 
-/* Lado izquierdo (Cliente) */
-.awn-actor--client {
-}
-
-/* Lado derecho (Realizador) */
-.awn-actor--performer {
-}
-
 /* ── Texto de los actores ─────────────────────────────── */
 .awn-actor-role {
     font-size: 8px;
@@ -67,12 +59,6 @@
     line-height: 1;
 }
 
-.awn-actor-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
-    white-space: nowrap;
-}
 /* ── Modo B/N ─────────────────────────────────────────── */
 .bw-mode .awn-actor {
     background: transparent;

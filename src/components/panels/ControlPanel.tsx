@@ -10,19 +10,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { useWorkflowStore } from '../../store/workflowStore';
 import type { WorkflowExportSchema } from '../../types/workflow.types';
 import { PHASES } from '../../types/workflow.types';
-import { importFromDrive, exportToDrive, disconnectDrive, isConnected } from '../../services/googleDrive';
+import { importFromDrive, exportToDrive, disconnectDrive, isConnected, formatError } from '../../services/googleDrive';
 import './ControlPanel.css';
-
-function formatDriveError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  if (typeof err === 'object' && err !== null) {
-    const obj = err as Record<string, unknown>;
-    if (typeof obj.message === 'string') return obj.message;
-    try { return JSON.stringify(err); } catch { return 'Error desconocido'; }
-  }
-  return String(err);
-}
 
 interface ControlPanelProps {
   onAddNode: () => void;
@@ -87,7 +76,7 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
       setDriveConnected(true);
       showDriveToast('Archivo importado desde Drive correctamente', 'success');
     } catch (err) {
-      showDriveToast(`Error: ${formatDriveError(err)}`, 'error');
+      showDriveToast(`Error: ${formatError(err)}`, 'error');
     }
   }, [importGraph, showDriveToast, handleCloseMobile]);
 
@@ -102,7 +91,7 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
       setDriveConnected(true);
       showDriveToast(`Archivo guardado en Drive`, 'success');
     } catch (err) {
-      showDriveToast(`Error: ${formatDriveError(err)}`, 'error');
+      showDriveToast(`Error: ${formatError(err)}`, 'error');
     }
   }, [exportGraph, showDriveToast, handleCloseMobile]);
 

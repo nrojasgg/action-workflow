@@ -81,8 +81,7 @@ export interface ActionWorkflowNodeData extends Record<string, unknown> {
   client: string;
   /** Actor situado a la derecha de la elipse */
   performer: string;
-  /** Fase actualmente resaltada (opcional, para modo de edición guiada) */
-  highlightedPhase?: PhaseId;
+
 }
 
 export type WorkflowNode = Node<ActionWorkflowNodeData, 'actionWorkflow'>;
@@ -134,6 +133,7 @@ export interface WorkflowState {
   // ── Selección ──
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
+  graphVersion: number;
 
   // ── Handlers de React Flow (deltas de cambio) ──
   onNodesChange: OnNodesChange<AppNode>;
@@ -141,7 +141,7 @@ export interface WorkflowState {
   onConnect: OnConnect;
 
   // ── Acciones CRUD ──
-  addNode: (position?: XYPosition) => void;
+  addNode: (position: XYPosition) => void;
   addShape: (position: XYPosition) => void;
   updateNodeData: (id: string, data: Partial<ActionWorkflowNodeData> | Partial<ShapeNodeData>) => void;
   deleteNode: (id: string) => void;

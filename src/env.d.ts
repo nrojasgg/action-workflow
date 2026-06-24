@@ -34,22 +34,6 @@ declare namespace google {
   }
 }
 
-interface GooglePickerBuilder {
-  addView(view: GooglePickerView): GooglePickerBuilder;
-  setOAuthToken(token: string): GooglePickerBuilder;
-  setDeveloperKey(key: string): GooglePickerBuilder;
-  setCallback(callback: (data: GooglePickerResponse) => void): GooglePickerBuilder;
-  build(): GooglePicker;
-}
-
-interface GooglePicker {
-  setVisible(visible: boolean): void;
-}
-
-interface GooglePickerView {
-  setMimeTypes(mimeTypes: string): GooglePickerView;
-}
-
 interface GooglePickerResponse {
   action: string;
   docs?: Array<{
@@ -60,7 +44,7 @@ interface GooglePickerResponse {
 }
 
 declare namespace google.picker {
-  const Action: { PICKED: string; CANCEL: string };
+  const Action: { PICKED: string; CANCEL: string; LOADED: string };
   const ViewId: { DOCS: string; FOLDERS: string };
   class View {
     constructor(viewId: string);

@@ -3,7 +3,7 @@ import type { WorkflowExportSchema } from '../types/workflow.types';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
 const JSON_MIME = 'application/json';
 
-function formatError(err: unknown): string {
+export function formatError(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (typeof err === 'string') return err;
   if (typeof err === 'object' && err !== null) {
@@ -19,7 +19,6 @@ function formatError(err: unknown): string {
   return String(err);
 }
 
-let tokenClient: google.accounts.oauth2.TokenClient | null = null;
 let accessToken: string | null = null;
 let pickerLoaded = false;
 let gisLoaded = false;
@@ -71,7 +70,7 @@ async function authenticate(): Promise<string> {
   await ensureGis();
 
   return new Promise<string>((resolve, reject) => {
-    tokenClient = google.accounts.oauth2.initTokenClient({
+    const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: getClientId(),
       scope: DRIVE_SCOPE,
       callback: (resp) => {
@@ -116,7 +115,7 @@ async function openFilePicker(token: string): Promise<{ id: string; name: string
       .setCallback((data: GooglePickerResponse) => {
         if (data.action === google.picker.Action.PICKED && data.docs?.length) {
           resolve({ id: data.docs[0].id, name: data.docs[0].name });
-        } else {
+        } else if (data.action === google.picker.Action.CANCEL) {
           resolve(null);
         }
       })
@@ -142,7 +141,7 @@ async function openFolderPicker(token: string): Promise<string | null> {
       .setCallback((data: GooglePickerResponse) => {
         if (data.action === google.picker.Action.PICKED && data.docs?.length) {
           resolve(data.docs[0].id);
-        } else {
+        } else if (data.action === google.picker.Action.CANCEL) {
           resolve(null);
         }
       })

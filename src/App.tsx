@@ -78,6 +78,7 @@ function WorkflowCanvas() {
     addNode,
     addShape,
     bwMode,
+    graphVersion,
   } = useWorkflowStore(useShallow((s) => ({
     nodes: s.nodes,
     edges: s.edges,
@@ -91,6 +92,7 @@ function WorkflowCanvas() {
     addNode: s.addNode,
     addShape: s.addShape,
     bwMode: s.bwMode,
+    graphVersion: s.graphVersion,
   })));
 
   const { screenToFlowPosition, getNodes, fitView, getViewport, setViewport } = useReactFlow();
@@ -264,6 +266,7 @@ function WorkflowCanvas() {
     <div className={`canvas-wrapper ${bwMode ? 'bw-mode' : ''}`}>
       {/* ── Lienzo de React Flow ───────────────────────────────── */}
       <ReactFlow
+        key={graphVersion}
         nodes={nodes}
         edges={cleanEdges}
         onNodesChange={onNodesChange}

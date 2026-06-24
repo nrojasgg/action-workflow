@@ -112,30 +112,6 @@
   transition: opacity 0.2s, transform 0.2s !important;
 }
 
-/* ── Toast / Notificación de importación exitosa ─────────────  */
-.import-toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: rgba(130, 179, 102, 0.15);
-  border: 1px solid rgba(130, 179, 102, 0.40);
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-size: 13px;
-  color: rgba(200, 255, 180, 0.90);
-  backdrop-filter: blur(16px);
-  transition: transform 0.35s var(--ease-out), opacity 0.35s;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 100;
-}
-
-.import-toast.import-toast--visible {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-}
-
 /* ── Modo Blanco y Negro ───────────────────────────────────── */
 .canvas-wrapper.bw-mode {
   background: #ffffff !important;

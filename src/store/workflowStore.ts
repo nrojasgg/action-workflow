@@ -70,14 +70,6 @@ const INITIAL_NODE_COUNT = 2;
 const generateId = (): string =>
   `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
-const centeredPosition = (override?: XYPosition): XYPosition => {
-  if (override) return override;
-  return {
-    x: 200 + Math.random() * 400,
-    y: 100 + Math.random() * 300,
-  };
-};
-
 const formatCode = (n: number) => `C-${String(n).padStart(3, '0')}`;
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -93,6 +85,7 @@ export const useWorkflowStore = create<WorkflowState>()(
       bwMode: false,
       selectedNodeId: null,
       selectedEdgeId: null,
+      graphVersion: 0,
 
       // ── Handlers de React Flow ──
       onNodesChange: (changes) => {
@@ -119,12 +112,12 @@ export const useWorkflowStore = create<WorkflowState>()(
       },
 
       // ── CRUD de nodos ──
-      addNode: (position?: XYPosition) => {
+      addNode: (position: XYPosition) => {
         const count = (get().nodeCount ?? INITIAL_NODE_COUNT) + 1;
         const newNode: WorkflowNode = {
           id: generateId(),
           type: 'actionWorkflow',
-          position: centeredPosition(position),
+          position,
           data: {
             code: formatCode(count),
             label: 'Nuevo Ciclo',
@@ -223,6 +216,7 @@ export const useWorkflowStore = create<WorkflowState>()(
           edges: schema.edges,
           selectedNodeId: null,
           nodeCount: maxCode,
+          graphVersion: get().graphVersion + 1,
         });
       },
 
@@ -235,6 +229,7 @@ export const useWorkflowStore = create<WorkflowState>()(
           nodeCount: INITIAL_NODE_COUNT,
           showPhaseLabels: true,
           bwMode: false,
+          graphVersion: get().graphVersion + 1,
         });
       },
     }),
@@ -283,6 +278,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         nodeCount: state.nodeCount,
         showPhaseLabels: state.showPhaseLabels,
         bwMode: state.bwMode,
+        graphVersion: state.graphVersion,
       }),
     }
   )
