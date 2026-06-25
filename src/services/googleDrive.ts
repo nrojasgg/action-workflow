@@ -153,7 +153,7 @@ async function openFolderPicker(token: string): Promise<string | null> {
 
 // ─── Importar desde Drive ─────────────────────────────────────────────────
 
-export async function importFromDrive(): Promise<WorkflowExportSchema | null> {
+export async function importFromDrive(): Promise<{ schema: WorkflowExportSchema; fileName: string } | null> {
   const token = await authenticate();
 
   const file = await openFilePicker(token);
@@ -182,12 +182,13 @@ export async function importFromDrive(): Promise<WorkflowExportSchema | null> {
     throw new Error('El archivo no tiene la estructura de Action Workflow (faltan nodos o aristas).');
   }
 
-  return schema;
+  const fileName = file.name.replace(/\.json$/i, '');
+  return { schema, fileName };
 }
 
 // ─── Exportar a Drive ─────────────────────────────────────────────────────
 
-export async function exportToDrive(schema: WorkflowExportSchema): Promise<string> {
+export async function exportToDrive(schema: WorkflowExportSchema, fileName: string): Promise<string> {
   const token = await authenticate();
 
   const folderId = await openFolderPicker(token);
@@ -195,10 +196,9 @@ export async function exportToDrive(schema: WorkflowExportSchema): Promise<strin
 
   const json = JSON.stringify(schema, null, 2);
   const blob = new Blob([json], { type: JSON_MIME });
-  const fileName = `action-workflow-${new Date().toISOString().slice(0, 10)}.json`;
 
   const metadata = {
-    name: fileName,
+    name: `${fileName}.json`,
     mimeType: JSON_MIME,
     parents: [folderId],
   };

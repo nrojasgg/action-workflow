@@ -11,6 +11,7 @@ import { useWorkflowStore } from '../../store/workflowStore';
 import type { WorkflowExportSchema } from '../../types/workflow.types';
 import { PHASES } from '../../types/workflow.types';
 import { importFromDrive, exportToDrive, disconnectDrive, isConnected, formatError } from '../../services/googleDrive';
+import { ExportModal } from './ExportModal';
 import './ControlPanel.css';
 
 interface ControlPanelProps {
@@ -22,7 +23,7 @@ interface ControlPanelProps {
 type DriveStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPanelProps) {
-  const { exportGraph, importGraph, resetGraph, showPhaseLabels, setShowPhaseLabels, bwMode, setBwMode } = useWorkflowStore(useShallow((s) => ({
+  const { exportGraph, importGraph, resetGraph, showPhaseLabels, setShowPhaseLabels, bwMode, setBwMode, fileName, setFileName } = useWorkflowStore(useShallow((s) => ({
     exportGraph: s.exportGraph,
     importGraph: s.importGraph,
     resetGraph: s.resetGraph,
@@ -30,6 +31,8 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
     setShowPhaseLabels: s.setShowPhaseLabels,
     bwMode: s.bwMode,
     setBwMode: s.setBwMode,
+    fileName: s.fileName,
+    setFileName: s.setFileName,
   })));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(() => window.innerWidth >= 768);
@@ -37,6 +40,8 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
   const [driveStatus, setDriveStatus] = useState<DriveStatus>('idle');
   const [driveMessage, setDriveMessage] = useState('');
   const [driveConnected, setDriveConnected] = useState(() => isConnected());
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportModalTarget, setExportModalTarget] = useState<'local' | 'drive'>('local');
 
   useEffect(() => {
     const check = () => {
@@ -48,9 +53,9 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const handleCloseMobile = useCallback(() => {
-    if (isMobile) setIsOpen(false);
-  }, [isMobile]);
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
 
   const showDriveToast = useCallback((msg: string, status: DriveStatus) => {
     setDriveMessage(msg);
@@ -64,36 +69,23 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
     try {
       setDriveStatus('loading');
       setDriveMessage('Conectando con Google Drive...');
-      handleCloseMobile();
+      handleClose();
 
-      const schema: WorkflowExportSchema | null = await importFromDrive();
-      if (!schema) {
+      const result = await importFromDrive();
+      if (!result) {
         setDriveStatus('idle');
         return;
       }
 
-      importGraph(schema);
+      importGraph(result.schema);
+      setFileName(result.fileName);
       setDriveConnected(true);
       showDriveToast('Archivo importado desde Drive correctamente', 'success');
     } catch (err) {
       showDriveToast(`Error: ${formatError(err)}`, 'error');
     }
-  }, [importGraph, showDriveToast, handleCloseMobile]);
+  }, [importGraph, showDriveToast, handleClose, setFileName]);
 
-  const handleDriveExport = useCallback(async () => {
-    try {
-      setDriveStatus('loading');
-      setDriveMessage('Subiendo a Google Drive...');
-      handleCloseMobile();
-
-      const schema = exportGraph();
-      await exportToDrive(schema);
-      setDriveConnected(true);
-      showDriveToast(`Archivo guardado en Drive`, 'success');
-    } catch (err) {
-      showDriveToast(`Error: ${formatError(err)}`, 'error');
-    }
-  }, [exportGraph, showDriveToast, handleCloseMobile]);
 
   const handleDriveDisconnect = useCallback(() => {
     disconnectDrive();
@@ -102,18 +94,44 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
   }, [showDriveToast]);
 
   const handleExport = () => {
-    const schema = exportGraph();
-    const json = JSON.stringify(schema, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `action-workflow-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
+    setExportModalTarget('local');
+    setExportModalOpen(true);
   };
+
+  const handleDriveExportClick = () => {
+    setExportModalTarget('drive');
+    setExportModalOpen(true);
+  };
+
+  const handleExportConfirm = useCallback(async (name: string) => {
+    setExportModalOpen(false);
+    setFileName(name);
+
+    if (exportModalTarget === 'local') {
+      const schema = exportGraph();
+      const json = JSON.stringify(schema, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${name}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } else {
+      try {
+        setDriveStatus('loading');
+        setDriveMessage('Subiendo a Google Drive...');
+        const schema = exportGraph();
+        await exportToDrive(schema, name);
+        setDriveConnected(true);
+        showDriveToast('Archivo guardado en Drive', 'success');
+      } catch (err) {
+        showDriveToast(`Error: ${formatError(err)}`, 'error');
+      }
+    }
+  }, [exportModalTarget, exportGraph, setFileName, showDriveToast]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -127,6 +145,8 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
           throw new Error('Estructura de JSON inválida');
         }
         importGraph(schema);
+        const nameWithoutExt = file.name.replace(/\.json$/i, '');
+        setFileName(nameWithoutExt);
       } catch (err) {
         alert(
           `Error al importar el archivo.\n` +
@@ -147,25 +167,23 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
 
   return (
     <>
-      {/* Botón toggle flotante (solo móvil) */}
-      {isMobile && (
-        <button
-          className="ctrl-fab"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
-        >
-          <span className="ctrl-fab-icon">{isOpen ? '✕' : '☰'}</span>
-        </button>
-      )}
+      {/* Botón toggle flotante */}
+      <button
+        className={`ctrl-fab${isOpen ? ' ctrl-fab--open' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
+      >
+        <span className="ctrl-fab-icon">{isOpen ? '✕' : '☰'}</span>
+      </button>
 
       {/* Overlay de fondo (solo móvil abierto) */}
       {isMobile && isOpen && (
-        <div className="ctrl-overlay" onClick={handleCloseMobile} />
+        <div className="ctrl-overlay" onClick={handleClose} />
       )}
 
-      {/* En móvil: solo renderizar el panel cuando está abierto */}
-      {(!isMobile || isOpen) && (
-        <div className={`ctrl-panel${isOpen ? ' ctrl-panel--open' : ''}${isMobile ? ' ctrl-panel--mobile' : ''}`} role="navigation" aria-label="Panel de controles">
+      {/* Panel: solo renderizar cuando está abierto */}
+      {isOpen && (
+        <div className={`ctrl-panel${isMobile ? ' ctrl-panel--mobile' : ''}`} role="navigation" aria-label="Panel de controles">
         {/* Cabecera */}
         <header className="ctrl-header">
           <div className="ctrl-logo" aria-hidden="true">
@@ -187,27 +205,27 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
 
         {/* Botones de acción */}
         <div className="ctrl-actions">
-          <button className="ctrl-btn ctrl-btn--primary" onClick={() => { onAddNode(); handleCloseMobile(); }}>
+          <button className="ctrl-btn ctrl-btn--primary" onClick={() => { onAddNode(); handleClose(); }}>
             <span className="ctrl-btn-icon">＋</span>
             Nuevo Ciclo
           </button>
 
-          <button className="ctrl-btn ctrl-btn--primary" onClick={() => { onAddShape(); handleCloseMobile(); }}>
+          <button className="ctrl-btn ctrl-btn--primary" onClick={() => { onAddShape(); handleClose(); }}>
             <span className="ctrl-btn-icon">○</span>
             Nueva Figura
           </button>
 
-          <button className="ctrl-btn ctrl-btn--secondary" onClick={() => { handleExport(); handleCloseMobile(); }}>
+          <button className="ctrl-btn ctrl-btn--secondary" onClick={() => { handleExport(); handleClose(); }}>
             <span className="ctrl-btn-icon">↓</span>
             Exportar JSON
           </button>
 
-          <button className="ctrl-btn ctrl-btn--secondary" onClick={() => { onExportPng(); handleCloseMobile(); }}>
+          <button className="ctrl-btn ctrl-btn--secondary" onClick={() => { onExportPng(); handleClose(); }}>
             <span className="ctrl-btn-icon">◻</span>
             Exportar PNG
           </button>
 
-          <button className="ctrl-btn ctrl-btn--secondary" onClick={() => { fileInputRef.current?.click(); handleCloseMobile(); }}>
+          <button className="ctrl-btn ctrl-btn--secondary" onClick={() => { fileInputRef.current?.click(); handleClose(); }}>
             <span className="ctrl-btn-icon">↑</span>
             Importar JSON
           </button>
@@ -236,7 +254,7 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
 
           <button
             className="ctrl-btn ctrl-btn--drive"
-            onClick={handleDriveExport}
+            onClick={handleDriveExportClick}
             disabled={driveStatus === 'loading'}
           >
             <span className="ctrl-btn-icon">
@@ -260,7 +278,7 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
 
         {/* Restablecer */}
         <div className="ctrl-actions">
-          <button className="ctrl-btn ctrl-btn--danger" onClick={() => { handleReset(); handleCloseMobile(); }}>
+          <button className="ctrl-btn ctrl-btn--danger" onClick={() => { handleReset(); handleClose(); }}>
             <span className="ctrl-btn-icon">↺</span>
             Restablecer
           </button>
@@ -318,6 +336,13 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
           <span>{driveMessage}</span>
         </div>
       )}
+      {/* Modal de exportación */}
+      <ExportModal
+        isOpen={exportModalOpen}
+        defaultName={fileName || `action-workflow-${new Date().toISOString().slice(0, 10)}`}
+        onConfirm={handleExportConfirm}
+        onCancel={() => setExportModalOpen(false)}
+      />
     </>
   );
 }

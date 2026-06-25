@@ -244,6 +244,23 @@ export function PropertiesPanel({ node, edge }: PropertiesPanelProps) {
               <div className="props-divider" />
 
               <div className="props-field">
+                <label className="props-label" htmlFor="prop-shape-code">
+                  Código de Figura
+                </label>
+                <input
+                  id="prop-shape-code"
+                  className="props-input"
+                  type="text"
+                  value={(node?.data as any).code ?? ''}
+                  onChange={(e) => handleChange('code' as any, e.target.value)}
+                  placeholder="Ej: F-001"
+                  maxLength={20}
+                  disabled={!node}
+                  style={{ fontFamily: "'Consolas', monospace", fontWeight: 700, letterSpacing: '0.05em' }}
+                />
+              </div>
+
+              <div className="props-field">
                 <label className="props-label" htmlFor="prop-shapeType">
                   Tipo de Figura
                 </label>

@@ -87,6 +87,7 @@ export interface ActionWorkflowNodeData extends Record<string, unknown> {
 export type WorkflowNode = Node<ActionWorkflowNodeData, 'actionWorkflow'>;
 
 export interface ShapeNodeData extends Record<string, unknown> {
+  code: string;
   shapeType: 'circle' | 'rhombus';
   label: string;
 }
@@ -125,15 +126,24 @@ export interface WorkflowState {
 
   // ── Contador de nodos (para generar códigos únicos como C-001) ──
   nodeCount: number;
+  shapeCount: number;
 
   // ── Configuraciones Globales ──
   showPhaseLabels: boolean;
   bwMode: boolean;
+  fileName: string;
 
   // ── Selección ──
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
   graphVersion: number;
+
+  // ── Historial (Undo/Redo) ──
+  undoStack: { nodes: AppNode[]; edges: WorkflowEdge[] }[];
+  redoStack: { nodes: AppNode[]; edges: WorkflowEdge[] }[];
+
+  // ── Portapapeles ──
+  copiedNode: AppNode | null;
 
   // ── Handlers de React Flow (deltas de cambio) ──
   onNodesChange: OnNodesChange<AppNode>;
@@ -153,9 +163,18 @@ export interface WorkflowState {
   // ── Acciones de Configuración ──
   setShowPhaseLabels: (show: boolean) => void;
   setBwMode: (bw: boolean) => void;
+  setFileName: (name: string) => void;
 
   // ── Persistencia / E/S ──
   importGraph: (schema: WorkflowExportSchema) => void;
   exportGraph: () => WorkflowExportSchema;
   resetGraph: () => void;
+
+  // ── Undo/Redo ──
+  undo: () => void;
+  redo: () => void;
+
+  // ── Copiar/Pegar ──
+  copyNode: (id: string) => void;
+  pasteNode: () => void;
 }

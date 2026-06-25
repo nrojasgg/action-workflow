@@ -64,6 +64,7 @@ const INITIAL_EDGES: WorkflowEdge[] = [
 
 /** Contador inicial (los 2 nodos de ejemplo ya usan C-001 y C-002) */
 const INITIAL_NODE_COUNT = 2;
+const INITIAL_SHAPE_COUNT = 0;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,18 @@ const generateId = (): string =>
   `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 const formatCode = (n: number) => `C-${String(n).padStart(3, '0')}`;
+const formatShapeCode = (n: number) => `F-${String(n).padStart(3, '0')}`;
+
+// ─── Helper para historial ──────────────────────────────────────────────────
+
+const MAX_HISTORY = 50;
+
+function pushToUndoStack(get: () => WorkflowState, set: (partial: Partial<WorkflowState>) => void) {
+  const { nodes, edges, undoStack } = get();
+  const snapshot = { nodes: [...nodes], edges: [...edges] };
+  const newStack = [...undoStack, snapshot].slice(-MAX_HISTORY);
+  set({ undoStack: newStack, redoStack: [] });
+}
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
@@ -81,22 +94,30 @@ export const useWorkflowStore = create<WorkflowState>()(
       nodes: INITIAL_NODES,
       edges: INITIAL_EDGES,
       nodeCount: INITIAL_NODE_COUNT,
+      shapeCount: INITIAL_SHAPE_COUNT,
       showPhaseLabels: true,
       bwMode: false,
+      fileName: '',
       selectedNodeId: null,
       selectedEdgeId: null,
       graphVersion: 0,
+      undoStack: [],
+      redoStack: [],
+      copiedNode: null,
 
       // ── Handlers de React Flow ──
       onNodesChange: (changes) => {
+        pushToUndoStack(get, set);
         set({ nodes: applyNodeChanges(changes, get().nodes) });
       },
 
       onEdgesChange: (changes) => {
+        pushToUndoStack(get, set);
         set({ edges: applyEdgeChanges(changes, get().edges) });
       },
 
       onConnect: (connection) => {
+        pushToUndoStack(get, set);
         const newEdge: WorkflowEdge = {
           ...connection,
           id: `edge-${Date.now()}`,
@@ -113,6 +134,7 @@ export const useWorkflowStore = create<WorkflowState>()(
 
       // ── CRUD de nodos ──
       addNode: (position: XYPosition) => {
+        pushToUndoStack(get, set);
         const count = (get().nodeCount ?? INITIAL_NODE_COUNT) + 1;
         const newNode: WorkflowNode = {
           id: generateId(),
@@ -129,19 +151,23 @@ export const useWorkflowStore = create<WorkflowState>()(
       },
 
       addShape: (position: XYPosition) => {
+        pushToUndoStack(get, set);
+        const count = (get().shapeCount ?? INITIAL_SHAPE_COUNT) + 1;
         const newShape: any = {
           id: `shape-${Date.now()}`,
           type: 'shapeNode',
           position,
           data: {
+            code: formatShapeCode(count),
             shapeType: 'circle',
             label: 'Nueva Figura',
           },
         };
-        set({ nodes: [...get().nodes, newShape] });
+        set({ nodes: [...get().nodes, newShape], shapeCount: count });
       },
 
       updateNodeData: (id: string, data: Partial<ActionWorkflowNodeData> | Partial<ShapeNodeData>) => {
+        pushToUndoStack(get, set);
         set({
           nodes: get().nodes.map((n) =>
             n.id === id ? { ...n, data: { ...n.data, ...data } } : n
@@ -150,6 +176,7 @@ export const useWorkflowStore = create<WorkflowState>()(
       },
 
       deleteNode: (id: string) => {
+        pushToUndoStack(get, set);
         set({
           nodes: get().nodes.filter((n) => n.id !== id),
           edges: get().edges.filter(
@@ -169,6 +196,7 @@ export const useWorkflowStore = create<WorkflowState>()(
       },
 
       updateEdgeData: (id: string, data: Partial<WorkflowEdgeData>) => {
+        pushToUndoStack(get, set);
         set({
           edges: get().edges.map((e) =>
             e.id === id ? { ...e, data: { ...e.data, ...data } as WorkflowEdgeData } : e
@@ -177,6 +205,7 @@ export const useWorkflowStore = create<WorkflowState>()(
       },
 
       deleteEdge: (id: string) => {
+        pushToUndoStack(get, set);
         set({
           edges: get().edges.filter((e) => e.id !== id),
           selectedEdgeId: get().selectedEdgeId === id ? null : get().selectedEdgeId,
@@ -189,6 +218,80 @@ export const useWorkflowStore = create<WorkflowState>()(
 
       setBwMode: (bw: boolean) => {
         set({ bwMode: bw });
+      },
+
+      setFileName: (name: string) => {
+        set({ fileName: name });
+      },
+
+      // ── Undo/Redo ──
+      undo: () => {
+        const { undoStack, nodes, edges } = get();
+        if (undoStack.length === 0) return;
+        const prev = undoStack[undoStack.length - 1];
+        set({
+          undoStack: undoStack.slice(0, -1),
+          redoStack: [...get().redoStack, { nodes: [...nodes], edges: [...edges] }],
+          nodes: prev.nodes,
+          edges: prev.edges,
+        });
+      },
+
+      redo: () => {
+        const { redoStack, nodes, edges } = get();
+        if (redoStack.length === 0) return;
+        const next = redoStack[redoStack.length - 1];
+        set({
+          redoStack: redoStack.slice(0, -1),
+          undoStack: [...get().undoStack, { nodes: [...nodes], edges: [...edges] }],
+          nodes: next.nodes,
+          edges: next.edges,
+        });
+      },
+
+      // ── Copiar/Pegar ──
+      copyNode: (id: string) => {
+        const node = get().nodes.find((n) => n.id === id);
+        if (node) set({ copiedNode: { ...node } });
+      },
+
+      pasteNode: () => {
+        const { copiedNode, nodes, shapeCount, nodeCount } = get();
+        if (!copiedNode) return;
+
+        pushToUndoStack(get, set);
+
+        const isShape = copiedNode.type === 'shapeNode';
+        const newId = isShape ? `shape-${Date.now()}` : generateId();
+
+        let newCode: string;
+        let newNodeCount = nodeCount;
+        let newShapeCount = shapeCount;
+
+        if (isShape) {
+          newShapeCount = (shapeCount ?? 0) + 1;
+          newCode = formatShapeCode(newShapeCount);
+        } else {
+          newNodeCount = (nodeCount ?? INITIAL_NODE_COUNT) + 1;
+          newCode = formatCode(newNodeCount);
+        }
+
+        const newNode: AppNode = {
+          ...copiedNode,
+          id: newId,
+          position: {
+            x: copiedNode.position.x + 30,
+            y: copiedNode.position.y + 30,
+          },
+          data: { ...copiedNode.data, code: newCode },
+        } as AppNode;
+
+        set({
+          nodes: [...nodes, newNode],
+          selectedNodeId: newId,
+          nodeCount: newNodeCount,
+          shapeCount: newShapeCount,
+        });
       },
 
       // ── E/S ──
@@ -211,12 +314,18 @@ export const useWorkflowStore = create<WorkflowState>()(
           return match ? Math.max(max, parseInt(match[0], 10)) : max;
         }, INITIAL_NODE_COUNT);
 
+        const maxShapeCode = schema.nodes.reduce((max, n) => {
+          if (n.type !== 'shapeNode') return max;
+          const match = String(n.data.code ?? '').match(/\d+$/);
+          return match ? Math.max(max, parseInt(match[0], 10)) : max;
+        }, INITIAL_SHAPE_COUNT);
+
         set({
           nodes: schema.nodes,
           edges: schema.edges,
           selectedNodeId: null,
           nodeCount: maxCode,
-          graphVersion: get().graphVersion + 1,
+          shapeCount: maxShapeCode,
         });
       },
 
@@ -227,8 +336,10 @@ export const useWorkflowStore = create<WorkflowState>()(
           selectedNodeId: null,
           selectedEdgeId: null,
           nodeCount: INITIAL_NODE_COUNT,
+          shapeCount: INITIAL_SHAPE_COUNT,
           showPhaseLabels: true,
           bwMode: false,
+          fileName: '',
           graphVersion: get().graphVersion + 1,
         });
       },
@@ -276,8 +387,10 @@ export const useWorkflowStore = create<WorkflowState>()(
         nodes: state.nodes,
         edges: state.edges,
         nodeCount: state.nodeCount,
+        shapeCount: state.shapeCount,
         showPhaseLabels: state.showPhaseLabels,
         bwMode: state.bwMode,
+        fileName: state.fileName,
         graphVersion: state.graphVersion,
       }),
     }

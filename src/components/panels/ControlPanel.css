@@ -4,6 +4,8 @@
 
 .ctrl-panel {
   width: 224px;
+  max-height: calc(100vh - 8px);
+  overflow-y: auto;
   background: rgba(7, 10, 20, 0.90);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -246,10 +248,9 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MÓVIL / TABLET (max-width: 768px)
+   FAB — Botón toggle (todas las pantallas)
    ═══════════════════════════════════════════════════════════ */
 
-/* Botón flotante (FAB) */
 .ctrl-fab {
   position: fixed;
   top: 12px;
@@ -280,6 +281,10 @@
 .ctrl-fab-icon {
   line-height: 1;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MÓVIL / TABLET (max-width: 768px)
+   ═══════════════════════════════════════════════════════════ */
 
 /* Overlay oscuro */
 .ctrl-overlay {
@@ -388,12 +393,12 @@
   align-items: center;
 }
 
-/* scrollbar en móvil */
-.ctrl-panel--mobile::-webkit-scrollbar {
+/* scrollbar */
+.ctrl-panel::-webkit-scrollbar {
   width: 3px;
 }
 
-.ctrl-panel--mobile::-webkit-scrollbar-thumb {
+.ctrl-panel::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 2px;
 }

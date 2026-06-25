@@ -1,64 +1,88 @@
 .shape-node-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  /* Allow selection and pointer events */
-  pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    /* Allow selection and pointer events */
+    pointer-events: none;
 }
 
 .shape-svg-wrapper {
-  position: relative;
-  pointer-events: all;
-  cursor: grab;
+    position: relative;
+    pointer-events: all;
+    cursor: grab;
+}
+
+/* Posicionar handles en los bordes de la figura, no del contenedor */
+.shape-svg-wrapper .react-flow__handle-top {
+    left: 50% !important;
+    top: 20% !important;
+}
+
+.shape-svg-wrapper .react-flow__handle-right {
+    left: 60% !important;
+    top: 50% !important;
+}
+
+.shape-svg-wrapper .react-flow__handle-bottom {
+    left: 50% !important;
+    top: 60% !important;
+}
+
+.shape-svg-wrapper .react-flow__handle-left {
+    left: 20% !important;
+    top: 50% !important;
 }
 
 .shape-svg-wrapper:active {
-  cursor: grabbing;
+    cursor: grabbing;
 }
 
 /* React Flow Default Handles are already positioned via Position prop
    We just need to make sure they are visible and have decent hitboxes. */
 .shape-node-container .react-flow__handle {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(108, 142, 191, 0);
-  border: 1.5px solid rgba(108, 142, 191, 0);
-  opacity: 0;
-  transition: opacity 0.18s ease, background 0.18s ease,
-              border-color 0.18s ease, transform 0.18s ease;
-  z-index: 10;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(108, 142, 191, 0);
+    border: 1.5px solid rgba(108, 142, 191, 0);
+    opacity: 0;
+    transition:
+        opacity 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease;
+    z-index: 10;
 }
 
 .shape-node-container:hover .react-flow__handle {
-  opacity: 1;
-  background: rgba(108, 142, 191, 0.22);
-  border-color: rgba(108, 142, 191, 0.65);
+    opacity: 1;
+    background: rgba(108, 142, 191, 0.22);
+    border-color: rgba(108, 142, 191, 0.65);
 }
 
 .shape-node-container .react-flow__handle:hover {
-  opacity: 1 !important;
-  background: rgba(108, 142, 191, 0.92) !important;
-  border-color: rgba(255, 255, 255, 0.90) !important;
-  transform: translate(-50%, -50%) scale(1.55) !important;
+    opacity: 1 !important;
+    background: rgba(108, 142, 191, 0.92) !important;
+    border-color: rgba(255, 255, 255, 0.9) !important;
+    transform: translate(-50%, -50%) scale(1.55) !important;
 }
 
 .shape-node-container .react-flow__handle-right:hover {
-  transform: translate(50%, -50%) scale(1.55) !important;
+    transform: translate(50%, -50%) scale(1.55) !important;
 }
 
 .shape-node-container .react-flow__handle-bottom:hover {
-  transform: translate(-50%, 50%) scale(1.55) !important;
+    transform: translate(-50%, 50%) scale(1.55) !important;
 }
 
 .shape-node-label {
-  margin-top: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-  max-width: 150px;
-  word-wrap: break-word;
-  pointer-events: none;
+    margin-top: 8px;
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    max-width: 150px;
+    word-wrap: break-word;
+    pointer-events: none;
 }

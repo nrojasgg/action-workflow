@@ -14,7 +14,7 @@
  * El estado del grafo vive en Zustand (workflowStore) con
  * persistencia automática en localStorage.
  */
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -79,6 +79,10 @@ function WorkflowCanvas() {
     addShape,
     bwMode,
     graphVersion,
+    undo,
+    redo,
+    copyNode,
+    pasteNode,
   } = useWorkflowStore(useShallow((s) => ({
     nodes: s.nodes,
     edges: s.edges,
@@ -93,6 +97,10 @@ function WorkflowCanvas() {
     addShape: s.addShape,
     bwMode: s.bwMode,
     graphVersion: s.graphVersion,
+    undo: s.undo,
+    redo: s.redo,
+    copyNode: s.copyNode,
+    pasteNode: s.pasteNode,
   })));
 
   const { screenToFlowPosition, getNodes, fitView, getViewport, setViewport } = useReactFlow();
@@ -247,6 +255,36 @@ function WorkflowCanvas() {
     () => edges.find((e) => e.id === selectedEdgeId) ?? null,
     [edges, selectedEdgeId]
   );
+
+  // ── Atajos de teclado ──
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorar si el foco está en un input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      if (ctrl && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      } else if (ctrl && e.key === 'c') {
+        if (selectedNodeId) {
+          e.preventDefault();
+          copyNode(selectedNodeId);
+        }
+      } else if (ctrl && e.key === 'v') {
+        e.preventDefault();
+        pasteNode();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo, copyNode, pasteNode, selectedNodeId]);
 
   // Limpiar markerEnd/markerStart de aristas guardadas para evitar que React Flow acorte la línea
   const cleanEdges = useMemo(() => {

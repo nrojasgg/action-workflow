@@ -32,6 +32,15 @@ export function WorkflowEdge({
   const controlX = baseMidX + midOffsetX;
   const controlY = baseMidY + midOffsetY;
 
+  // Punto real sobre la curva Bézier cuadrática en t=0.5
+  // P(0.5) = 0.25·source + 0.5·control + 0.25·target
+  const curveMidX = 0.25 * sourceX + 0.5 * controlX + 0.25 * targetX;
+  const curveMidY = 0.25 * sourceY + 0.5 * controlY + 0.25 * targetY;
+
+  // Offset del punto de la curva respecto al punto de control
+  const labelOffsetX = curveMidX - controlX;
+  const labelOffsetY = curveMidY - controlY;
+
   // Calculamos el path de la curva cuadrática (Q) manualmente o usando un SVG path
   // M origen Q punto_control destino
   const edgePath = `M ${sourceX},${sourceY} Q ${controlX},${controlY} ${targetX},${targetY}`;
@@ -141,28 +150,30 @@ export function WorkflowEdge({
             pointerEvents: 'all',
             zIndex: isDragging ? 100 : 10,
           }}
-          className={`edge-control-point nodrag nopan ${selected ? 'visible' : ''} ${isDragging ? 'dragging' : ''}`}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          title="Arrastra para curvar la línea"
         >
-          <div className="control-point-inner" style={{ borderColor: strokeColor, backgroundColor: bwMode ? '#fff' : '#0A0F1C' }} />
+          <div
+            className={`edge-control-point nodrag nopan ${selected ? 'visible' : ''} ${isDragging ? 'dragging' : ''}`}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            title="Arrastra para curvar la línea"
+          >
+            <div className="control-point-inner" style={{ borderColor: strokeColor, backgroundColor: bwMode ? '#fff' : '#0A0F1C' }} />
+          </div>
 
-          {/* Etiqueta de texto de la arista */}
+          {/* Etiqueta de texto sobre la curva (siempre visible) */}
           {data?.label && (
             <div
               className="edge-label-text nodrag"
               style={{
                 position: 'absolute',
-                top: '12px',
-                left: '50%',
-                transform: 'translateX(-50%)',
+                left: `${labelOffsetX}px`,
+                top: `${labelOffsetY}px`,
+                transform: 'translate(-50%, -50%)',
                 color: bwMode ? '#000000' : 'rgba(255, 255, 255, 0.9)',
-                background: bwMode ? 'rgba(255, 255, 255, 0.85)' : 'rgba(10, 15, 28, 0.85)',
-                padding: '2px 6px',
-                borderRadius: '4px',
+                padding: '0',
+                borderRadius: '0',
                 fontSize: '11px',
                 fontFamily: 'Inter, system-ui, sans-serif',
                 fontWeight: 600,
