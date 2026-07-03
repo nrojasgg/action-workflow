@@ -53,7 +53,7 @@ const INITIAL_EDGES: WorkflowEdge[] = [
     sourceHandle: 's-0',
     targetHandle: 't-180',
     type: 'workflow',
-    animated: true,
+    animated: false,
     style: { stroke: '#6C8EBF', strokeWidth: 2 },
     data: {
       arrowDirection: 'forward',
@@ -122,7 +122,7 @@ export const useWorkflowStore = create<WorkflowState>()(
           ...connection,
           id: `edge-${Date.now()}`,
           type: 'workflow',
-          animated: true,
+          animated: false,
           style: { stroke: '#6C8EBF', strokeWidth: 2 },
           data: {
             arrowDirection: 'none',
@@ -326,6 +326,7 @@ export const useWorkflowStore = create<WorkflowState>()(
           selectedNodeId: null,
           nodeCount: maxCode,
           shapeCount: maxShapeCode,
+          graphVersion: get().graphVersion + 1,
         });
       },
 

@@ -52,7 +52,7 @@ const edgeTypes = {
 // ─── Opciones por defecto para nuevas aristas ─────────────────────────────────
 const defaultEdgeOptions = {
   type: 'workflow',
-  animated: true,
+  animated: false,
   style: { stroke: '#6C8EBF', strokeWidth: 2 },
 };
 
@@ -103,7 +103,7 @@ function WorkflowCanvas() {
     pasteNode: s.pasteNode,
   })));
 
-  const { screenToFlowPosition, getNodes, fitView, getViewport, setViewport } = useReactFlow();
+  const { screenToFlowPosition, getNodes, getViewport, setViewport } = useReactFlow();
 
   // Añadir nodo centrado en el viewport visible
   const handleAddNode = useCallback(() => {
@@ -141,36 +141,45 @@ function WorkflowCanvas() {
       const originalHeight = wrapper.style.height;
       const originalOverflow = wrapper.style.overflow;
 
-      // Calculamos el bounding box de todos los nodos
-      const padding = 80;
+      // Margen lateral para actores (cada actor ocupa 100px fuera del nodo)
+      const ACTOR_MARGIN = 120;
+      const VERT_MARGIN = 30;
+
+      // Bounding box en coordenadas del flujo, incluyendo actores y texto
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       for (const node of allNodes) {
-        const w = (node.measured?.width ?? node.width ?? 220);
-        const h = (node.measured?.height ?? node.height ?? 160);
-        minX = Math.min(minX, node.position.x);
-        minY = Math.min(minY, node.position.y);
-        maxX = Math.max(maxX, node.position.x + w);
-        maxY = Math.max(maxY, node.position.y + h);
+        const w = node.measured?.width ?? node.width ?? 220;
+        const h = node.measured?.height ?? node.height ?? 160;
+        minX = Math.min(minX, node.position.x - ACTOR_MARGIN);
+        minY = Math.min(minY, node.position.y - VERT_MARGIN);
+        maxX = Math.max(maxX, node.position.x + w + ACTOR_MARGIN);
+        maxY = Math.max(maxY, node.position.y + h + VERT_MARGIN);
       }
 
-      const contentW = maxX - minX + padding * 2;
-      const contentH = maxY - minY + padding * 2;
+      const boxW = maxX - minX;
+      const boxH = maxY - minY;
+      const edgePad = 50;
 
-      // Redimensionamos el canvas para que quepa todo el contenido
-      wrapper.style.width = `${contentW}px`;
-      wrapper.style.height = `${contentH}px`;
+      // Dimensiones del wrapper
+      const wrapperW = boxW + edgePad * 2;
+      const wrapperH = boxH + edgePad * 2;
+      wrapper.style.width = `${wrapperW}px`;
+      wrapper.style.height = `${wrapperH}px`;
       wrapper.style.overflow = 'visible';
 
-      // Esperamos un frame para que el layout se aplique
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((r) => requestAnimationFrame(r));
 
-      // Ajustamos la vista para encuadrar todo
-      await fitView({ padding: 0.08, duration: 0 });
+      // Calcular viewport manualmente (sin fitView) para incluir actores
+      const zoom = Math.min(wrapperW / boxW, wrapperH / boxH) * 0.90;
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      const tx = wrapperW / 2 - centerX * zoom;
+      const ty = wrapperH / 2 - centerY * zoom;
+      setViewport({ x: tx, y: ty, zoom }, { duration: 0 });
 
-      // Esperamos a que el DOM aplique los estilos
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      // Esperar a que React Flow aplique el viewport transform
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-      // Agregamos la clase temporal para ocultar selecciones y handles
       wrapper.classList.add('is-exporting');
 
       const dataUrl = await toPng(wrapper, {
@@ -211,7 +220,7 @@ function WorkflowCanvas() {
       wrapper.style.overflow = '';
       alert('Error al exportar la imagen. Por favor intenta de nuevo.');
     }
-  }, [getNodes, fitView, getViewport, setViewport, bwMode]);
+  }, [getNodes, getViewport, setViewport, bwMode]);
 
   // Seleccionar nodo al hacer clic
   const handleNodeClick = useCallback(

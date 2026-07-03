@@ -314,18 +314,19 @@ export function ControlPanel({ onAddNode, onAddShape, onExportPng }: ControlPane
           </label>
         </div>
 
-        {/* Input oculto para importar */}
-        <input
-          ref={fileInputRef}
-          id="file-import-input"
-          type="file"
-          accept=".json,application/json"
-          onChange={handleFileChange}
-          style={{ display: 'none' }}
-          aria-label="Seleccionar archivo JSON para importar"
-        />
       </div>
       )}
+
+      {/* Input oculto para importar (siempre en el DOM) */}
+      <input
+        ref={fileInputRef}
+        id="file-import-input"
+        type="file"
+        accept=".json,application/json"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+        aria-label="Seleccionar archivo JSON para importar"
+      />
 
       {/* Toast de Drive */}
       {driveStatus !== 'idle' && (
